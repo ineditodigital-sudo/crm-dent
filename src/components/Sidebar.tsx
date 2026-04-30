@@ -1,61 +1,43 @@
-import { useState } from 'react';
 import { 
   LayoutDashboard, 
   MessageSquare, 
   Calendar,
   Users, 
   BarChart3, 
-  ChevronRight,
-  Plug,
+  Settings,
   Globe,
-  Stethoscope,
+  LayoutGrid,
   Building2,
-  Menu,
-  X
+  X,
+  Search,
+  ChevronRight
 } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { Logo } from './Logo';
 import { useBrand } from '../context/BrandContext';
+import { useTheme } from '../context/ThemeContext';
 
 const navItems = [
-  { icon: <LayoutDashboard size={22} />, label: 'Dashboard', path: '/' },
-  { icon: <MessageSquare size={22} />, label: 'Mensajes', path: '/conversations' },
-  { icon: <Calendar size={22} />, label: 'Agenda', path: '/calendar' },
-  { icon: <Users size={22} />, label: 'Pacientes', path: '/patients' },
-  { icon: <Stethoscope size={22} />, label: 'Servicios', path: '/services' },
-  { icon: <BarChart3 size={22} />, label: 'Reportes', path: '/reports' },
-  { icon: <Building2 size={22} />, label: 'Negocio', path: '/business' },
-  { icon: <Globe size={22} />, label: 'Editor Web', path: '/web-editor' },
-  { icon: <Plug size={22} />, label: 'Conexiones', path: '/connections' },
+  { icon: <LayoutDashboard size={18} />, label: 'Dashboard', path: '/admin' },
+  { icon: <MessageSquare size={18} />, label: 'Mensajes', path: '/admin/conversations' },
+  { icon: <Calendar size={18} />, label: 'Agenda', path: '/admin/calendar' },
+  { icon: <Users size={18} />, label: 'Pacientes', path: '/admin/patients' },
+  { icon: <LayoutGrid size={18} />, label: 'Servicios', path: '/admin/services' },
+  { icon: <Search size={18} />, label: 'SEO & Marketing', path: '/admin/seo' },
+  { icon: <Building2 size={18} />, label: 'Negocio', path: '/admin/business' },
+  { icon: <Globe size={18} />, label: 'Editor Web', path: '/admin/web-editor' },
+  { icon: <Settings size={18} />, label: 'Configuración', path: '/admin/settings' },
+  { icon: <BarChart3 size={18} />, label: 'Reportes', path: '/admin/reports' },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobileOpen: (o: boolean) => void }) => {
   const { brand } = useBrand();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const location = useLocation();
+  const { isDark } = useTheme();
 
-  const currentLabel = navItems.find(n => n.path === location.pathname)?.label || 'CRM';
+  const logoSrc = isDark ? (brand.logo_url || brand.logo_dark_url) : (brand.logo_dark_url || brand.logo_url);
 
   return (
     <>
-      {/* ── MOBILE TOP BAR ── */}
-      <div className="mobile-topbar">
-        <div className="mobile-brand">
-          {brand.logo_url
-            ? <img src={brand.logo_url} alt={brand.clinic_name} className="mobile-logo-img" />
-            : <Logo size="small" />
-          }
-          <span className="mobile-page-label">{currentLabel}</span>
-        </div>
-        <button
-          className="hamburger-btn"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Abrir menú"
-        >
-          <Menu size={24} />
-        </button>
-      </div>
-
       {/* ── MOBILE DRAWER OVERLAY ── */}
       {mobileOpen && (
         <div className="drawer-overlay" onClick={() => setMobileOpen(false)} />
@@ -64,8 +46,13 @@ const Sidebar = () => {
       {/* ── SIDEBAR (desktop) + DRAWER (mobile) ── */}
       <aside className={`sidebar-glass ${mobileOpen ? 'drawer-open' : ''}`}>
         <div className="sidebar-header">
-          {brand.logo_url ? (
-            <img src={brand.logo_url} alt={brand.clinic_name} className="sidebar-logo-img" />
+          {logoSrc ? (
+            <img 
+              src={logoSrc} 
+              alt={brand.clinic_name} 
+              className="sidebar-logo-img" 
+              style={{ filter: isDark && !brand.logo_url ? 'invert(1) brightness(2)' : 'none' }}
+            />
           ) : (
             <Logo />
           )}
@@ -190,11 +177,12 @@ const Sidebar = () => {
             padding: 0.75rem 1.25rem;
             background: var(--bg-card);
             border-bottom: 1px solid var(--glass-border);
-            position: sticky;
+            position: fixed;
             top: 0;
-            z-index: 900;
+            left: 0;
+            right: 0;
+            z-index: 1100;
             backdrop-filter: var(--glass-blur);
-            flex-shrink: 0;
           }
           .mobile-brand { display: flex; align-items: center; gap: 0.75rem; }
           .mobile-logo-img { height: 32px; object-fit: contain; }

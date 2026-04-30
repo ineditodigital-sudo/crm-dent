@@ -40,7 +40,7 @@ const Conversations = () => {
   }, [authFetch]);
 
   const fetchMessages = React.useCallback((patientId: number) => {
-    authFetch(`/api/messages/${patientId}`)
+    authFetch(`/api/conversations/${patientId}/messages`)
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         setMessages(data);
@@ -58,7 +58,7 @@ const Conversations = () => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat) return;
     try {
-      await authFetch('/api/messages/send', { method: 'POST', body: JSON.stringify({ patientId: selectedChat.id, content: newMessage }) });
+      await authFetch(`/api/conversations/${selectedChat.id}/send`, { method: 'POST', body: JSON.stringify({ content: newMessage }) });
       setNewMessage('');
       fetchMessages(selectedChat.id);
     } catch {}
@@ -180,6 +180,10 @@ const Conversations = () => {
           <>
             <header className="chat-head">
               <div className="chat-head-info">
+                {/* Back button only on mobile */}
+                <button className="mobile-back-btn" onClick={() => setSelectedChat(null)}>
+                  <X size={20} />
+                </button>
                 <div className="conv-avatar" style={{ width: 40, height: 40, fontSize: '0.9rem' }}>
                   {selectedChat.name?.charAt(0)?.toUpperCase() || 'P'}
                 </div>
@@ -354,14 +358,28 @@ const Conversations = () => {
         .cancel-btn { flex: 1; padding: 0.8rem; border-radius: 12px; background: var(--bg-app); border: 1px solid var(--glass-border); font-weight: 700; cursor: pointer; color: var(--text-primary); }
         .delete-btn { flex: 1; padding: 0.8rem; border-radius: 12px; background: #ff3b30; color: white; font-weight: 700; cursor: pointer; border: none; }
 
+        .mobile-back-btn { display: none; background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.5rem; margin-left: -0.5rem; }
+        
         @media (max-width: 900px) {
-          .conv-wrap { flex-direction: column; height: auto; min-height: calc(100dvh - 130px); }
-          .conv-list { width: 100%; min-width: 0; max-height: 45dvh; }
-          .conv-chat { min-height: 50dvh; }
+          .conv-wrap { flex-direction: row; height: calc(100dvh - 140px); overflow: hidden; position: relative; }
+          .conv-list { 
+            position: absolute; inset: 0; width: 100%; z-index: 10; 
+            transform: ${selectedChat ? 'translateX(-100%)' : 'translateX(0)'};
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          .conv-chat { 
+            position: absolute; inset: 0; width: 100%; z-index: 5;
+            transform: ${selectedChat ? 'translateX(0)' : 'translateX(100%)'};
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+          .mobile-back-btn { display: flex; align-items: center; justify-content: center; }
+          .chat-head { padding: 0.75rem 1rem; }
+          .chat-messages { padding: 1rem; }
+          .msg-bubble { max-width: 85%; }
+          .chat-foot { padding: 0.75rem 1rem; }
         }
         @media (max-width: 600px) {
           .conv-row-actions { opacity: 1; }
-          .msg-bubble { max-width: 88%; }
         }
       `}</style>
     </div>

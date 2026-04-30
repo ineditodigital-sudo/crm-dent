@@ -24,6 +24,9 @@ auth_info_baileys
 # Secrets and Tokens
 backend/credentials.json
 backend/token.json
+backend/test-*.js
+backend/test_*.js
+backend/*.zip
 client_secret_*.json
 
 # Editor directories and files

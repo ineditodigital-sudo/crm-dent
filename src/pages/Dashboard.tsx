@@ -121,7 +121,7 @@ const Dashboard = () => {
                     <span className="alert-time">
                       {new Date(chat.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
-                    <button className="action-btn-ios" onClick={() => window.location.href='/conversations'}>Atender</button>
+                    <button className="action-btn-ios" onClick={() => window.location.href = '/admin/conversations'}>Atender</button>
                   </div>
                 ))
               ) : (

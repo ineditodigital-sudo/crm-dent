@@ -1,0 +1,23 @@
+{
+  "short_name": "CRM",
+  "name": "CRM Multiagente",
+  "icons": [
+    {
+      "src": "/api/brand-favicon?size=192",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/api/brand-favicon?size=512",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "theme_color": "#007aff",
+  "lang": "es"
+}

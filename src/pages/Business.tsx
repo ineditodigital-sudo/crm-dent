@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Building2, Upload, RefreshCw, Check, Palette, Type, Globe, ImageIcon, X } from 'lucide-react';
+import { Building2, Upload, RefreshCw, Check, Palette, Type, Globe, ImageIcon, X, Bot, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useBrand } from '../context/BrandContext';
 
@@ -22,9 +22,9 @@ const FONT_OPTIONS = [
 ];
 
 const GIRO_OPTIONS = [
-  'Clínica Dental', 'Consultorio Médico', 'Clínica de Estética', 'Spa & Wellness',
-  'Consultorio Psicológico', 'Clínica Veterinaria', 'Nutrición y Bienestar',
-  'Centro de Fisioterapia', 'Clínica Oftalmológica', 'Otro',
+  'Clínica Dental', 'Cosmetología', 'Consultorio Médico', 'Clínica de Estética',
+  'Spa & Wellness', 'Consultorio Psicológico', 'Clínica Veterinaria',
+  'Nutrición y Bienestar', 'Centro de Fisioterapia', 'Clínica Oftalmológica', 'Otro',
 ];
 
 type BrandState = {
@@ -36,7 +36,8 @@ type BrandState = {
   logo_url: string;
   logo_dark_url: string;
   favicon_url: string;
-  business_hours: string; // JSON string
+  business_hours: string;
+  bot_personality: string;
 };
 
 const defaultBrand: BrandState = {
@@ -48,6 +49,7 @@ const defaultBrand: BrandState = {
   logo_url: '',
   logo_dark_url: '',
   favicon_url: '',
+  bot_personality: '',
   business_hours: JSON.stringify({
     monday:    { active: true,  open: '09:00', close: '18:00' },
     tuesday:   { active: true,  open: '09:00', close: '18:00' },
@@ -141,6 +143,42 @@ const BusinessPage = () => {
   useEffect(() => {
     setBrandLocal(b => ({ ...b, ...globalBrand }));
   }, [globalBrand]);
+
+  // Aplicar favicon dinámicamente cuando cambia
+  useEffect(() => {
+    if (brand.favicon_url) {
+      let link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
+      if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+      link.href = brand.favicon_url;
+    }
+  }, [brand.favicon_url]);
+
+  const [regenerating, setRegenerating] = useState(false);
+
+  const regenerateBotPersonality = async () => {
+    if (!brand.clinic_name && !brand.giro) {
+      alert('Primero ingresa el nombre y giro del negocio.');
+      return;
+    }
+    setRegenerating(true);
+    try {
+      const r = await fetch('/api/brand/generate-prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
+        body: JSON.stringify({ clinic_name: brand.clinic_name, giro: brand.giro, tagline: brand.tagline })
+      });
+      if (r.ok) {
+        const data = await r.json();
+        set('bot_personality', data.prompt);
+      } else {
+        alert('No se pudo generar el prompt. Verifica que la API de Gemini esté activa.');
+      }
+    } catch(e) {
+      alert('Error al conectar con la IA.');
+    }
+    setRegenerating(false);
+  };
+
 
   const save = async () => {
     setSaving(true);
@@ -386,12 +424,35 @@ const BusinessPage = () => {
 
       </div>
 
-      <div className="biz-footer-actions">
-        <button className="save-all-btn large" onClick={save} disabled={saving}>
-          <Upload size={18} />
-          {saving ? 'Guardando...' : saved ? '¡Cambios guardados exitosamente!' : 'Guardar todos los cambios'}
-        </button>
-      </div>
+        {/* === PERSONALIDAD DEL BOT === */}
+        <motion.div className="biz-section glass-card" style={{ gridColumn: '1 / -1' }} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+          <div className="section-title">
+            <Bot size={20} />
+            <h2>Personalidad e Instrucciones del Bot</h2>
+          </div>
+          <p className="section-desc">Define cómo se comporta el bot con tus clientes. Puedes escribirlo manualmente o dejar que la IA lo genere automáticamente según tu giro.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <textarea
+              className="bot-prompt-textarea"
+              rows={6}
+              placeholder={`Ej: Eres el asistente virtual de ${brand.clinic_name || 'nuestra clínica'}. Atiende a los pacientes de forma amable, profesional y en español. Tu objetivo principal es agendar citas y responder dudas sobre nuestros servicios...`}
+              value={brand.bot_personality}
+              onChange={e => set('bot_personality', e.target.value)}
+            />
+            <button className="regenerate-btn" onClick={regenerateBotPersonality} disabled={regenerating}>
+              {regenerating ? <RefreshCw size={16} className="spinning" /> : <Sparkles size={16} />}
+              {regenerating ? 'Generando con IA...' : 'Regenerar Personalidad con IA'}
+            </button>
+          </div>
+        </motion.div>
+
+
+        <div className="biz-footer-actions">
+          <button className="save-all-btn large" onClick={save} disabled={saving}>
+            <Upload size={18} />
+            {saving ? 'Guardando...' : saved ? '¡Cambios guardados exitosamente!' : 'Guardar todos los cambios'}
+          </button>
+        </div>
 
       <style>{`
         .business-page { display: flex; flex-direction: column; gap: 2rem; }
@@ -472,6 +533,18 @@ const BusinessPage = () => {
         .hours-times { display: flex; align-items: center; gap: 0.5rem; }
         .hours-times input[type=time] { padding: 0.4rem 0.75rem; border-radius: 10px; border: 1px solid var(--glass-border); background: var(--bg-app); font-size: 0.85rem; color: var(--text-primary); }
         .hours-closed { font-size: 0.8rem; color: var(--text-muted); font-weight: 600; }
+
+        /* Bot personality */
+        .bot-prompt-textarea { width: 100%; padding: 1rem; border-radius: 14px; border: 1px solid var(--glass-border); background: var(--bg-surface); font-size: .88rem; color: var(--text-primary); font-family: inherit; resize: vertical; min-height: 130px; line-height: 1.6; }
+        .bot-prompt-textarea:focus { border-color: var(--primary); outline: none; }
+        .regenerate-btn { align-self: flex-start; display: flex; align-items: center; gap: .5rem; padding: .65rem 1.25rem; border-radius: var(--radius-full); background: linear-gradient(135deg, #5856d6, #bf5af2); color: white; font-weight: 700; font-size: .85rem; border: none; cursor: pointer; transition: var(--transition); box-shadow: 0 4px 16px rgba(88,86,214,0.3); }
+        .regenerate-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(88,86,214,0.4); }
+        .regenerate-btn:disabled { opacity: .7; }
+        .generate-landing-btn { display: flex; align-items: center; gap: .5rem; padding: .65rem 1.25rem; border-radius: var(--radius-full); background: linear-gradient(135deg, #ff9f0a, #ff6b6b); color: white; font-weight: 700; font-size: .82rem; border: none; cursor: pointer; transition: var(--transition); box-shadow: 0 4px 16px rgba(255,159,10,0.3); }
+        .generate-landing-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,159,10,0.4); }
+        .generate-landing-btn:disabled { opacity: .7; }
+        .landing-preview-box { border-radius: 14px; padding: 1rem; background: rgba(255,159,10,0.06); border: 1px solid rgba(255,159,10,0.2); }
+        .landing-preview-content { font-size: 0.8rem; color: var(--text-secondary); white-space: pre-wrap; font-family: inherit; line-height: 1.6; margin: 0; max-height: 260px; overflow-y: auto; }
 
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinning { animation: spin .8s linear infinite; }

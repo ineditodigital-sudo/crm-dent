@@ -1,25 +1,12 @@
-import { useState, useEffect } from 'react';
 import { Sun, Moon } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 export const ThemeToggle = () => {
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  });
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [isDark]);
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <button 
-      onClick={() => setIsDark(!isDark)}
+      onClick={toggleTheme}
       className="nav-theme-toggle"
       aria-label="Toggle Theme"
       title="Cambiar Modo Claro/Oscuro"

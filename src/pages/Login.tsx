@@ -156,6 +156,18 @@ const LoginPage = () => {
           60%       { transform: translateX(-5px); }
           80%       { transform: translateX(5px); }
         }
+
+        @media (max-width: 500px) {
+          .login-card {
+            padding: 1.5rem;
+            max-width: 90%;
+            border-radius: 20px;
+          }
+          .login-header h1 { font-size: 1.5rem; }
+          .login-header p { font-size: 0.8rem; margin-top: 1rem; }
+          .input-group-ios input { height: 44px; font-size: 0.9rem; }
+          .login-btn-ios { height: 48px; font-size: 0.9rem; margin-top: 1.5rem; }
+        }
       `}</style>
     </div>
   );

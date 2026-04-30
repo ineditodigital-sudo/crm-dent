@@ -15,6 +15,7 @@ import {
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MessageCircle, CheckCircle } from 'lucide-react';
 
 const API_BASE = '';
 const getToken = () => localStorage.getItem('crm_token') || '';
@@ -25,7 +26,7 @@ const CalendarPage = () => {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     patient_name: '',
     appointment_date: '',
@@ -34,6 +35,9 @@ const CalendarPage = () => {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [upcoming, setUpcoming] = useState<any[]>([]);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelledApp, setCancelledApp] = useState<any | null>(null);
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
@@ -59,7 +63,48 @@ const CalendarPage = () => {
     }
   }, []);
 
-  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+  const fetchUpcoming = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/appointments/upcoming`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      if (res.ok) setUpcoming(await res.json());
+    } catch { /* silencioso */ }
+  }, []);
+
+  useEffect(() => { fetchAppointments(); fetchUpcoming(); }, [fetchAppointments, fetchUpcoming]);
+
+  const handleCancel = async (id: string | number) => {
+    const app = appointments.find(a => String(a.id) === String(id)) || upcoming.find(a => String(a.id) === String(id));
+    if (!confirm('⚠️ ATENCIÓN: Al cancelar esta cita se eliminará permanentemente de Google Calendar y del sistema. ¿Deseas continuar?')) return;
+    
+    setCancellingId(String(id));
+    try {
+      const res = await fetch(`${API_BASE}/api/appointments/${id}/cancel`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      if (res.ok) {
+        setCancelledApp(app);
+        fetchAppointments();
+        fetchUpcoming();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const contactCancelled = () => {
+    if (!cancelledApp) return;
+    const phone = cancelledApp.patient_phone || '';
+    const name = cancelledApp.patient_name || cancelledApp.patient || 'Paciente';
+    const date = format(new Date(cancelledApp.appointment_date || cancelledApp.date), "d 'de' MMMM 'a las' HH:mm", { locale: es });
+    const msg = `Hola ${name}, te contacto de la clínica para comentarte que lamentablemente tuvimos que cancelar tu cita del ${date}. ¿Te gustaría reagendar para otro momento?`;
+    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+    setCancelledApp(null);
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,19 +145,7 @@ const CalendarPage = () => {
       alert('Este evento es de Google Calendar. Elimínalo directamente desde Google Calendar.');
       return;
     }
-    if (!confirm('¿Cancelar esta cita? Se eliminará también de Google Calendar.')) return;
-    setDeletingId(String(id));
-    try {
-      await fetch(`${API_BASE}/api/appointments/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${getToken()}` }
-      });
-      fetchAppointments();
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setDeletingId(null);
-    }
+    handleCancel(id);
   };
 
   const monthStart = startOfMonth(currentDate);
@@ -165,6 +198,40 @@ const CalendarPage = () => {
         <span className="legend-item"><span className="dot manual" />Manual</span>
         <span className="legend-item"><span className="dot google" />Google Calendar</span>
       </div>
+
+      {/* PRÓXIMAS CITAS — Panel superior siempre visible */}
+      {upcoming.length > 0 && (
+        <section className="upcoming-section">
+          <h3 className="upcoming-title">📅 Próximas Citas — próximos 7 días</h3>
+          <div className="upcoming-list">
+            {upcoming.map((appt: any) => {
+              const d = new Date(appt.appointment_date);
+              const isToday = isSameDay(d, new Date());
+              return (
+                <div key={appt.id} className={`upcoming-card glass-card ${isToday ? 'upcoming-today' : ''}`}>
+                  <div className="upcoming-date-block">
+                    <span className="upcoming-day">{format(d, 'd')}</span>
+                    <span className="upcoming-month">{format(d, 'MMM', { locale: es })}</span>
+                  </div>
+                  <div className="upcoming-info">
+                    <strong>{appt.patient_name || 'Paciente'}</strong>
+                    <span>{format(d, 'HH:mm')} · {appt.description || appt.treatment_type || 'Cita'}</span>
+                    {isToday && <span className="today-badge">HOY</span>}
+                  </div>
+                  <button
+                    className="cancel-upcoming-btn"
+                    onClick={() => handleCancel(appt.id)}
+                    disabled={cancellingId === String(appt.id)}
+                    title="Cancelar cita"
+                  >
+                    {cancellingId === String(appt.id) ? <RefreshCw size={13} className="spinning" /> : <X size={13} />}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* GRID + SIDEBAR */}
       <main className="calendar-grid-layout">
@@ -274,6 +341,8 @@ const CalendarPage = () => {
         </aside>
       </main>
 
+
+
       {/* MODAL NUEVA CITA */}
       <AnimatePresence>
         {showModal && (
@@ -347,6 +416,33 @@ const CalendarPage = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      {/* FEEDBACK CANCELACIÓN */}
+      <AnimatePresence>
+        {cancelledApp && (
+          <motion.div 
+            className="cancel-feedback glass-card"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+          >
+            <div className="cf-info">
+              <CheckCircle size={20} color="#34c759" />
+              <div>
+                <strong>Cita cancelada con éxito</strong>
+                <p>Se ha borrado de Google Calendar.</p>
+              </div>
+            </div>
+            <div className="cf-actions">
+              <button className="cf-btn msg" onClick={contactCancelled}>
+                <MessageCircle size={16} />
+                Contactar Cliente
+              </button>
+              <button className="cf-btn close" onClick={() => setCancelledApp(null)}>Cerrar</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
 
       <style>{`
         .calendar-ios { display: flex; flex-direction: column; gap: 1.5rem; }
@@ -434,6 +530,23 @@ const CalendarPage = () => {
         .form-error { color: #ff3b30; font-size: 0.8rem; padding: 0.5rem; background: rgba(255,59,48,0.1); border-radius: 8px; }
         .modal-note { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--text-muted); background: var(--glass); padding: 0.6rem 0.9rem; border-radius: 10px; }
 
+        /* PRÓXIMAS CITAS */
+        .upcoming-section { display: flex; flex-direction: column; gap: 0.75rem; }
+        .upcoming-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+        .upcoming-list { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .upcoming-card { padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem; border-radius: 16px; min-width: 220px; flex: 1; border-left: 3px solid var(--primary); transition: var(--transition); }
+        .upcoming-today { border-left-color: #ff9f0a; background: rgba(255,159,10,0.08) !important; animation: pulse-border 2s infinite; }
+        @keyframes pulse-border { 0%,100% { box-shadow: 0 0 0 0 rgba(255,159,10,0.3); } 50% { box-shadow: 0 0 0 6px rgba(255,159,10,0); } }
+        .upcoming-date-block { display: flex; flex-direction: column; align-items: center; min-width: 36px; }
+        .upcoming-day { font-size: 1.4rem; font-weight: 800; line-height: 1; }
+        .upcoming-month { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+        .upcoming-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .upcoming-info strong { font-size: 0.88rem; font-weight: 700; }
+        .upcoming-info span { font-size: 0.75rem; color: var(--text-muted); }
+        .today-badge { display: inline-block; background: #ff9f0a; color: white; font-size: 0.6rem; font-weight: 800; padding: 1px 6px; border-radius: 20px; letter-spacing: 0.5px; width: fit-content; }
+        .cancel-upcoming-btn { padding: 0.35rem; border-radius: 8px; color: var(--text-muted); transition: var(--transition); }
+        .cancel-upcoming-btn:hover { color: #ff3b30; background: rgba(255,59,48,0.1); }
+
         @keyframes spin { to { transform: rotate(360deg); } }
         .spinning { animation: spin 0.8s linear infinite; }
 
@@ -452,7 +565,19 @@ const CalendarPage = () => {
           .add-event-btn span { display: none; }
           .add-event-btn { padding: 0.75rem; border-radius: 50%; width: 44px; height: 44px; justify-content: center; }
           .cal-legend { flex-wrap: wrap; gap: 0.75rem; }
+          .upcoming-list { flex-direction: column; }
+          .upcoming-card { min-width: unset; }
         }
+        .cancel-feedback { position: fixed; bottom: 2rem; right: 2rem; z-index: 1100; width: 320px; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; border-left: 4px solid #34c759; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .cf-info { display: flex; gap: 0.75rem; align-items: flex-start; }
+        .cf-info strong { display: block; font-size: 0.9rem; margin-bottom: 2px; }
+        .cf-info p { font-size: 0.75rem; color: var(--text-muted); margin: 0; }
+        .cf-actions { display: flex; gap: 0.5rem; }
+        .cf-btn { flex: 1; padding: 0.6rem; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: var(--transition); border: none; }
+        .cf-btn.msg { background: #25d366; color: white; }
+        .cf-btn.msg:hover { background: #128c7e; }
+        .cf-btn.close { background: var(--glass); color: var(--text-primary); }
+
       `}</style>
     </div>
   );

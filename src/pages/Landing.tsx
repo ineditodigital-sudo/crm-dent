@@ -1,258 +1,381 @@
 import { useState, useEffect } from 'react';
 import { 
-  ShieldCheck, 
-  Stethoscope, 
   MessageCircle,
   ArrowRight,
-  CheckCircle,
   Sparkles,
-  Heart,
-  Smile,
-  Syringe,
-  Activity,
-  Award,
+  MapPin,
+  Camera,
+  X,
+  Menu,
   ChevronDown,
-  MapPin
+  Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 const Landing = ({ previewSettings }: { previewSettings?: any }) => {
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [settings, setSettings] = useState<any>(previewSettings || {
-    brand: { name: 'Dra. Stephanie Ortega', niche: 'Clínica Dental Especializada', logo: '' },
+    brand: { clinic_name: 'Dra. Stephanie Ortega', giro: 'Clínica Dental Especializada', logo_url: '' },
     theme: { primary: '#007aff', accent: '#ff2d55', font: 'Inter' },
     images: { hero: 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=2070&auto=format&fit=crop', doctor: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=2070&auto=format&fit=crop' },
     hero: { title: 'Sonrisas sanas, vidas más felices.', subtitle: 'Brindamos atención odontológica integral con tecnología de vanguardia y un trato humano excepcional.' },
-    services: { title: 'Tratamientos de Excelencia.' },
-    contact: { phone: '', address: 'Av. Principal #123, Colonia Centro. Edificio Médico Integral, Piso 4.' }
+    services: { title: 'Tratamientos de Excelencia.', subtitle: 'Conoce nuestras áreas de especialidad clínica.' },
+    contact: { phone: '', address: 'Av. Principal #123, Colonia Centro.' },
+    professional: { show: 'yes', bio: 'Con más de 10 años de experiencia transformando sonrisas...' },
+    faq: { q1: '¿Qué incluye la consulta?', a1: 'Incluye revisión clínica completa...', q2: '¿Duele el tratamiento?', a2: 'No, usamos tecnología indolora.' },
+    services_list: []
   });
 
   useEffect(() => {
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
+    const observer = new MutationObserver(() => setIsDarkMode(document.documentElement.classList.contains('dark')));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+
     if (previewSettings) {
       setSettings(previewSettings);
     } else {
-      const API_URL = '';
-      fetch(`${API_URL}/api/settings`)
+      fetch(`/api/public/settings`)
         .then(res => res.json())
         .then(data => {
           setSettings({
+            ...data,
             brand: data.brand || settings.brand,
             theme: data.theme || settings.theme,
             images: data.images || settings.images,
             hero: data.hero || settings.hero,
             services: data.services || settings.services,
-            contact: data.contact || settings.contact
+            contact: data.contact || settings.contact,
+            faq: data.faq || settings.faq,
+            professional: data.professional || settings.professional,
+            services_list: data.services_list || []
           });
+
+          // --- SEO Injection ---
+          const seo = data.seo || {};
+          if (seo.title) document.title = seo.title;
+          
+          const upsertMeta = (name: string, content: string | undefined, attr = 'name') => {
+            if (!content) return;
+            let el = document.querySelector(`meta[${attr}="${name}"]`);
+            if (!el) {
+              el = document.createElement('meta');
+              el.setAttribute(attr, name);
+              document.head.appendChild(el);
+            }
+            el.setAttribute('content', content);
+          };
+
+          upsertMeta('description', seo.description);
+          upsertMeta('keywords', seo.keywords);
+          upsertMeta('robots', seo.robots);
+          upsertMeta('og:title', seo.og_title || seo.title, 'property');
+          upsertMeta('og:description', seo.og_description || seo.description, 'property');
+          upsertMeta('og:image', seo.og_image, 'property');
+          upsertMeta('og:url', seo.canonical_url || window.location.href, 'property');
+          upsertMeta('og:type', 'website', 'property');
+          upsertMeta('twitter:card', 'summary_large_image');
+          upsertMeta('twitter:title', seo.og_title || seo.title);
+          upsertMeta('twitter:description', seo.og_description || seo.description);
+          upsertMeta('twitter:image', seo.og_image);
+
+          if (seo.canonical_url) {
+            let canEl = document.querySelector('link[rel="canonical"]');
+            if (!canEl) {
+              canEl = document.createElement('link');
+              canEl.setAttribute('rel', 'canonical');
+              document.head.appendChild(canEl);
+            }
+            canEl.setAttribute('href', seo.canonical_url);
+          }
+
+          if (seo.json_ld) {
+            let scriptEl = document.getElementById('json-ld-seo') as HTMLScriptElement;
+            if (!scriptEl) {
+              scriptEl = document.createElement('script');
+              scriptEl.id = 'json-ld-seo';
+              scriptEl.type = 'application/ld+json';
+              document.head.appendChild(scriptEl);
+            }
+            scriptEl.textContent = seo.json_ld;
+          }
         })
         .catch(err => console.error("Error fetching landing settings", err));
     }
+    return () => observer.disconnect();
   }, [previewSettings]);
 
-  const faqs = [
-    { q: '¿Qué incluye la consulta de valoración inicial?', a: 'Incluye revisión clínica completa, toma de fotografías intraorales, radiografías panorámicas (si son necesarias) y un plan de tratamiento detallado.' },
-    { q: '¿Los tratamientos provocan mucho dolor?', a: 'No, utilizamos tecnología de vanguardia y anestesia localizada de alta precisión para garantizar que todos nuestros procedimientos sean 100% indoloros.' },
-    { q: '¿Aceptan seguros de gastos médicos mayores?', a: 'Sí, trabajamos con la mayoría de las redes aseguradoras. Al agendar por WhatsApp, nuestro bot te pedirá tu póliza para verificar cobertura.' },
-    { q: '¿Cuánto dura un tratamiento de Blanqueamiento?', a: 'Generalmente se realiza en una sola sesión de 45 a 60 minutos, con resultados inmediatos que blanquean hasta 4 tonos.' }
-  ];
+  const faqs = [];
+  for(let i=1; i<=4; i++) {
+    if (settings.faq?.[`q${i}`]) {
+      faqs.push({ q: settings.faq[`q${i}`], a: settings.faq[`a${i}`] });
+    }
+  }
+
+  const currentLogo = isDarkMode 
+    ? (settings.brand?.logo_url || settings.brand?.logo_dark_url) 
+    : (settings.brand?.logo_dark_url || settings.brand?.logo_url);
+
+  const logoStyle: any = { 
+    height: '44px', 
+    width: 'auto', 
+    objectFit: 'contain',
+    // Filtro inteligente: 
+    // Si es DARK: Invertimos si NO hay logo oscuro (para que el negro sea blanco)
+    // Si es LIGHT: Invertimos si AMBOS son iguales o si sospechamos que es blanco sobre blanco
+    filter: isDarkMode 
+      ? (!settings.brand?.logo_dark_url ? 'brightness(0) invert(1)' : 'none')
+      : (settings.brand?.logo_dark_url && settings.brand?.logo_url === settings.brand?.logo_dark_url ? 'brightness(0)' : 'none')
+  };
+
+  const whatsappPhone = settings.contact?.phone?.replace(/\D/g, '') || '';
+  const waLink = `https://wa.me/${whatsappPhone}`;
+
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  // Gallery images from settings
+  const galleryImages = [];
+  for(let i=1; i<=6; i++) {
+    if (settings.images?.[`gallery_${i}`]) galleryImages.push(settings.images[`gallery_${i}`]);
+  }
 
   return (
     <div className="landing-ios-premium" style={{ 
       minHeight: '100%', 
       position: 'relative',
       '--primary': settings.theme?.primary || '#007aff',
+      '--primary-glow': (settings.theme?.primary || '#007aff') + '44',
       '--accent': settings.theme?.accent || '#ff2d55',
       fontFamily: settings.theme?.font === 'Playfair' ? '"Playfair Display", serif' : '"Inter", sans-serif'
     } as any}>
+      
+      {/* --- Lightbox --- */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="lightbox-overlay"
+            onClick={() => setSelectedImage(null)}
+          >
+            <motion.img 
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              src={selectedImage} alt="Fullscreen" className="lightbox-img" 
+            />
+            <button className="close-lightbox" onClick={() => setSelectedImage(null)}><X size={32} /></button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Navigation */}
       <nav className="glass-nav landing-header-ios" style={{ position: previewSettings ? 'absolute' : 'fixed' }}>
         <div className="ios-container nav-flex">
-          <div className="logo-ios">
-            {settings.brand?.logo ? (
-              <img src={settings.brand.logo} alt="Logo" style={{ height: '40px', borderRadius: '8px' }} />
+          <div className="logo-ios" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ cursor: 'pointer' }}>
+            {currentLogo ? (
+              <img src={currentLogo} alt="Logo" style={logoStyle} />
             ) : (
               <div className="logo-sparkle" style={{ background: 'var(--primary)' }}><Sparkles size={18} /></div>
             )}
-            <span>{settings.brand?.name || 'Dra. Stephanie Ortega'}</span>
           </div>
+          
           <div className="nav-links-ios">
-            <a href="#especialidades">Tratamientos</a>
-            <a href="#doctora">La Especialista</a>
-            <a href="#casos">Casos Clínicos</a>
-            <a href="#agendar">Cómo Agendar</a>
+            <a href="#inicio">Inicio</a>
+            <a href="#especialidades">Servicios</a>
+            <a href="#doctora">Información</a>
+            <a href="#contacto">Contacto</a>
             {!previewSettings && <ThemeToggle />}
-            <button className="btn-ios-primary" style={{ background: 'var(--primary)' }}>Citas por WhatsApp</button>
+            <a href={waLink} target="_blank" rel="noreferrer" className="btn-ios-pill">
+              <MessageCircle size={18} fill="currentColor" /> WhatsApp
+            </a>
+          </div>
+
+          <div className="nav-actions-mobile">
+             {!previewSettings && <ThemeToggle />}
+             <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(true)}>
+               <Menu size={24} />
+             </button>
           </div>
         </div>
       </nav>
 
+      {/* Mobile Drawer */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
+              className="drawer-overlay"
+            />
+            <motion.div 
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="mobile-drawer-ios glass-card"
+            >
+              <div className="drawer-header">
+                <span className="ios-label">Navegación</span>
+                <button onClick={() => setIsMenuOpen(false)} className="close-drawer">
+                   <X size={24} />
+                </button>
+              </div>
+              <div className="drawer-links">
+                <a href="#inicio" onClick={() => setIsMenuOpen(false)}>Inicio</a>
+                <a href="#especialidades" onClick={() => setIsMenuOpen(false)}>Servicios</a>
+                <a href="#doctora" onClick={() => setIsMenuOpen(false)}>Información</a>
+                <a href="#contacto" onClick={() => setIsMenuOpen(false)}>Contacto</a>
+                <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
+                   <a href={waLink} target="_blank" rel="noreferrer" className="btn-ios-pill large" style={{ width: '100%', justifyContent: 'center' }}>
+                     <MessageCircle size={22} fill="currentColor" /> Agendar Cita
+                   </a>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Hero Section */}
       <section className="hero-ios ios-container" style={{ paddingTop: previewSettings ? '120px' : '180px' }}>
         <div className="hero-text-wrap">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="hero-pill glass-card"
-          >
-            <Smile size={14} className="text-primary" />
-            <span>{settings.brand?.niche || 'Clínica Dental Especializada'}</span>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="hero-pill glass-card">
+            <Sparkles size={14} style={{ color: 'var(--primary)' }} />
+            <span>{settings.brand?.giro || 'Servicios Profesionales'}</span>
           </motion.div>
-          <h1 className="display-text animate-ios">
-            {settings.hero?.title}
-          </h1>
-          <p className="hero-sub animate-ios" style={{ animationDelay: '0.2s' }}>
-            {settings.hero?.subtitle}
-          </p>
+          <h1 className="display-text animate-ios">{settings.hero?.title}</h1>
+          <p className="hero-sub animate-ios" style={{ animationDelay: '0.2s' }}>{settings.hero?.subtitle}</p>
           <div className="hero-actions-ios animate-ios" style={{ animationDelay: '0.4s' }}>
-            <button className="btn-ios-large">
-              Agenda tu Valoración <ArrowRight size={18} />
-            </button>
+            <a href={waLink} target="_blank" rel="noreferrer" className="btn-ios-large" style={{ textDecoration: 'none' }}>
+              Agendar Cita <ArrowRight size={18} />
+            </a>
           </div>
         </div>
-
         <div className="hero-visual-ios">
            <div className="visual-stack">
-              <motion.div 
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="visual-card main-v glass-card"
-              >
-                <img src={settings.images?.hero || 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=2070&auto=format&fit=crop'} alt="Clínica" />
+              <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="visual-card main-v glass-card">
+                <img src={settings.images?.hero || 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=2070&auto=format&fit=crop'} alt="Hero" />
               </motion.div>
-              <div className="visual-card float-1 glass-card">
-                 <div className="v-header"><Heart size={14} className="text-danger" /> <span>Atención 24/7</span></div>
-                 <p>Nuestro asistente WhatsApp te atiende al instante para agendar.</p>
-              </div>
            </div>
         </div>
       </section>
 
       {/* Profile Section (Doctora) */}
-      <section id="doctora" className="profile-section ios-container">
-        <div className="profile-grid">
-           <div className="profile-photo glass-card">
-              <img src={settings.images?.doctor || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=2070&auto=format&fit=crop'} alt="La Especialista" className="doc-img" />
-              <div className="doc-badge glass-card"><Award size={20} className="text-primary" /> Especialista Certificada</div>
-           </div>
-           <div className="profile-info">
-              <span className="ios-label">Conoce a la Experta</span>
-              <h2 className="display-text-sm">Odontología basada en detalle y empatía.</h2>
-              <p className="doc-bio">Con más de 10 años de experiencia transformando sonrisas, la Dra. Stephanie Ortega lidera un equipo multidisciplinario enfocado en tratamientos indoloros y estéticamente perfectos. Egresada con honores y certificada en diseño de sonrisa avanzado, su filosofía es tratar a cada paciente con el mismo cuidado que le daría a su propia familia.</p>
-              <ul className="doc-credentials">
-                <li><CheckCircle size={16} className="text-primary" /> Especialidad en Ortodoncia Invisible</li>
-                <li><CheckCircle size={16} className="text-primary" /> Miembro de la Asociación Odontológica Nacional</li>
-                <li><CheckCircle size={16} className="text-primary" /> Cédula Profesional: 98765432</li>
-              </ul>
-           </div>
-        </div>
-      </section>
+      {settings.professional?.show !== 'no' && (
+        <section id="doctora" className="profile-section ios-container">
+          <div className="profile-grid">
+             <div className="profile-photo glass-card">
+                <img src={settings.images?.doctor || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=2070&auto=format&fit=crop'} alt="Especialista" className="doc-img" />
+                <div className="doc-badge glass-card"><Award size={20} className="text-primary" /> {settings.brand?.doctor_name || 'Especialista'}</div>
+             </div>
+             <div className="profile-info">
+                <span className="ios-label">Conoce a la Experta</span>
+                <h2 className="display-text-sm">Atención basada en detalle y empatía.</h2>
+                <p className="doc-bio">{settings.professional?.bio}</p>
+             </div>
+          </div>
+        </section>
+      )}
 
       {/* Services Grid */}
       <section id="especialidades" className="ios-container services-ios">
         <div className="section-head-ios">
           <h2 className="display-text-sm">{settings.services?.title}</h2>
-          <p>Conoce nuestras cinco áreas de especialidad clínica.</p>
+          <p>{settings.services?.subtitle}</p>
         </div>
-
-        <div className="ios-grid-services">
-          {[
-            { 
-              title: 'Odontología Preventiva y General', icon: <Stethoscope />, delay: 0.1,
-              items: ['Valoración y Diagnóstico', 'Limpieza Dental (Profilaxis)', 'Aplicación de Flúor y Selladores'] 
-            },
-            { 
-              title: 'Odontología Restaurativa', icon: <ShieldCheck />, delay: 0.2,
-              items: ['Resinas (Empastes)', 'Endodoncia (Conductos)', 'Coronas y Puentes'] 
-            },
-            { 
-              title: 'Estética Dental', icon: <Sparkles />, delay: 0.3,
-              items: ['Blanqueamiento Dental', 'Carillas (Porcelana/Resina)', 'Diseño de Sonrisa'] 
-            },
-            { 
-              title: 'Ortodoncia', icon: <Activity />, delay: 0.4,
-              items: ['Ortodoncia Convencional', 'Ortodoncia Invisible (Alineadores)'] 
-            },
-            { 
-              title: 'Cirugía Oral e Implantología', icon: <Syringe />, delay: 0.5,
-              items: ['Extracciones Dentales', 'Cirugía de Terceros Molares', 'Implantes Dentales de Titanio'] 
-            }
-          ].map((s, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: s.delay }} className="glass-card service-widget-premium">
-              <div className="s-icon-ios">{s.icon}</div>
-              <h3>{s.title}</h3>
-              <ul className="service-sublist">
-                {s.items.map((item, idx) => (
-                  <li key={idx}><CheckCircle size={14} className="text-success" /> {item}</li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Casos Clínicos / Before & After */}
-      <section id="casos" className="cases-section ios-container">
-        <div className="section-head-ios">
-          <span className="ios-label">Casos Reales</span>
-          <h2 className="display-text-sm">Transformaciones que inspiran.</h2>
-        </div>
-        <div className="cases-slider">
-          {[1, 2, 3].map((_, i) => (
-             <div key={i} className="case-card glass-card">
-               <div className="case-images">
-                 <div className="img-wrap before"><span className="label">Antes</span><img src={`https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=400&auto=format&fit=crop&sep=${i}`} alt="Antes" /></div>
-                 <div className="img-wrap after"><span className="label accent">Después</span><img src={`https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?q=80&w=400&auto=format&fit=crop&sep=${i}`} alt="Después" /></div>
-               </div>
-               <div className="case-info">
-                 <h4>Diseño de Sonrisa Completo</h4>
-                 <p>Tratamiento de Carillas y Blanqueamiento Profesional. Duración: 2 semanas.</p>
-               </div>
-             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* WhatsApp Automation (Cómo Agendar) */}
-      <section id="agendar" className="automation-ios glass-card">
-         <div className="ios-container automation-wrapper">
-            <div className="a-content">
-               <span className="ios-label">Atención Inmediata</span>
-               <h2 className="display-text-sm">Sin esperas en el teléfono.</h2>
-               <p className="text-muted" style={{ marginTop: '1rem', marginBottom: '1.5rem' }}>
-                 ¿Necesitas una cita? Nuestro asistente interactivo de WhatsApp te mostrará nuestra disponibilidad en tiempo real para que elijas el horario que mejor te acomode, cualquier día del año.
-               </p>
-               <ul className="ios-features">
-                  <li><CheckCircle size={18} /> Menú interactivo con todos los tratamientos</li>
-                  <li><CheckCircle size={18} /> Confirmación inmediata a tu celular</li>
-                  <li><CheckCircle size={18} /> Recordatorios un día antes de tu visita</li>
-               </ul>
-               <button className="btn-ios-large" style={{ marginTop: '2.5rem' }}>
-                 <MessageCircle size={20} /> Iniciar Chat para Agendar
-               </button>
-            </div>
-            <div className="a-visual">
-               <div className="phone-mockup glass-card">
-                  <header><span>Clínica Dra. Stephanie</span></header>
-                  <div className="mock-chat">
-                     <div className="bubble b-bot">
-                       ¡Hola! Bienvenido a la clínica. ¿En qué especialidad estás interesado? 👇<br/><br/>
-                       1. Odontología General<br/>
-                       2. Estética Dental<br/>
-                       3. Ortodoncia
-                     </div>
-                     <div className="bubble b-user">2</div>
-                     <div className="bubble b-bot">Excelente. Selecciona el horario que prefieras para tu cita de Valoración Estética 📅</div>
+        <div className="ios-grid-services bento-grid">
+          {settings.services_list?.length > 0 ? settings.services_list.map((s: any, i: number) => {
+            // Lógica de Bento: El primero y el cuarto son más grandes
+            const isFeatured = i === 0 || i === 3;
+            const isWide = i === 4;
+            
+            return (
+              <motion.div 
+                key={i} 
+                initial={{ opacity: 0, y: 20 }} 
+                whileInView={{ opacity: 1, y: 0 }} 
+                transition={{ delay: i * 0.1 }} 
+                className={`glass-card service-widget-premium bento-item ${isFeatured ? 'bento-featured' : ''} ${isWide ? 'bento-wide' : ''} ${s.image_url ? 'has-image' : ''}`}
+                style={{ 
+                  background: isFeatured ? 'rgba(var(--primary-rgb), 0.03)' : 'var(--glass-bg)',
+                  borderColor: isFeatured ? 'var(--primary)' : 'var(--glass-border)'
+                }}
+              >
+                {s.image_url && (
+                  <div className="bento-image-wrap">
+                    <img src={s.image_url} alt={s.name} />
                   </div>
-               </div>
-            </div>
-         </div>
+                )}
+                
+                <div className="bento-header-info">
+                  <div className="s-icon-ios" style={{ 
+                    background: isFeatured ? 'var(--primary)' : 'var(--primary-light)',
+                    color: isFeatured ? 'white' : 'var(--primary)'
+                  }}>
+                    {isFeatured ? <Award size={24} /> : <Sparkles size={20} />}
+                  </div>
+                  <div className="bento-content">
+                    <h3 style={{ fontSize: isFeatured ? '1.5rem' : '1.15rem' }}>{s.name}</h3>
+                    <p style={{ 
+                      fontSize: '0.85rem', 
+                      color: 'var(--text-muted)', 
+                      lineHeight: 1.6,
+                      display: '-webkit-box',
+                      WebkitLineClamp: isFeatured ? 4 : 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {s.description}
+                    </p>
+                    {s.price && (
+                      <div className="bento-price" style={{ 
+                        marginTop: 'auto', 
+                        paddingTop: '1.5rem', 
+                        fontWeight: 800, 
+                        color: 'var(--primary)',
+                        fontSize: isFeatured ? '1.1rem' : '0.9rem'
+                      }}>
+                        Desde ${s.price}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          }) : (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', opacity: 0.5 }}>Cargando servicios...</div>
+          )}
+        </div>
       </section>
 
-      {/* FAQ & Location Section */}
-      <section className="faq-location-section ios-container">
-        <div className="faq-wrap">
-          <span className="ios-label">Dudas Comunes</span>
-          <h2 className="display-text-sm" style={{marginBottom: '2rem'}}>Respuestas Rápidas</h2>
+      {/* Casos Clínicos / Gallery */}
+      {settings.gallery?.show !== 'no' && galleryImages.length > 0 && (
+        <section id="casos" className="cases-section ios-container">
+          <div className="section-head-ios">
+            <span className="ios-label">Galería</span>
+            <h2 className="display-text-sm">Casos y Resultados</h2>
+          </div>
+          <div className="gallery-grid">
+            {galleryImages.map((img, i) => (
+              <motion.div 
+                key={i} 
+                whileHover={{ scale: 1.02 }} 
+                className="gallery-item glass-card"
+                onClick={() => setSelectedImage(img)}
+              >
+                <img src={img} alt={`Galería ${i}`} />
+                <div className="gallery-overlay"><Camera size={24} /></div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* FAQ Section */}
+      {faqs.length > 0 && (
+        <section className="faq-section ios-container">
+          <div className="section-head-ios">
+            <span className="ios-label">Dudas Comunes</span>
+            <h2 className="display-text-sm">Preguntas Frecuentes</h2>
+          </div>
           <div className="accordion-list">
             {faqs.map((faq, idx) => (
               <div key={idx} className={`accordion-item glass-card ${activeFaq === idx ? 'open' : ''}`} onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}>
@@ -270,15 +393,30 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
               </div>
             ))}
           </div>
-        </div>
+        </section>
+      )}
 
-        <div className="location-wrap glass-card">
-           <MapPin size={32} className="text-primary" style={{marginBottom: '1rem'}} />
-           <h3 style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>Visítanos en la Clínica</h3>
-           <p className="text-muted" style={{marginBottom: '2rem'}}>{settings.contact?.address}</p>
-           <p className="text-muted" style={{marginBottom: '2rem'}}><strong>Tel / WhatsApp:</strong> {settings.contact?.phone}</p>
-           <div className="map-placeholder glass-card">
-              <span className="text-muted">Mapa Interactivo (Integración de SDK Maps pendiente)</span>
+      {/* Map Section */}
+      <section id="contacto" className="location-section ios-container">
+        <div className="section-head-ios" style={{ textAlign: 'left', marginBottom: '2.5rem' }}>
+          <span className="ios-label">Ubicación</span>
+          <h2 className="display-text-sm">¿Cómo llegar?</h2>
+        </div>
+        <div className="location-grid glass-card">
+           <div className="loc-info">
+             <MapPin size={32} className="text-primary" />
+             <h3 style={{fontSize: '1.5rem', margin: '1rem 0 0.5rem'}}>Dirección</h3>
+             <p className="text-muted">{settings.contact?.address}</p>
+             <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.contact?.address || '')}`} target="_blank" rel="noreferrer" className="btn-ios-pill" style={{ marginTop: '2rem', display: 'inline-flex', width: 'fit-content' }}>
+               Abrir en Google Maps
+             </a>
+           </div>
+           <div className="loc-map">
+              <iframe 
+                width="100%" height="100%" frameBorder="0" style={{ border: 0 }}
+                src={`https://www.google.com/maps?q=${encodeURIComponent(settings.contact?.address || '')}&output=embed`}
+                allowFullScreen
+              />
            </div>
         </div>
       </section>
@@ -287,175 +425,259 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
       <footer className="footer-ios ios-container">
         <div className="footer-main">
           <div className="f-col">
-            <h4 className="logo-ios">Dra. Stephanie Ortega</h4>
-            <p className="text-muted" style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
-              Transformando salud y confianza a través de la odontología de precisión y trato humano.
-            </p>
+            <h4 className="logo-ios">{settings.brand?.clinic_name}</h4>
+            <p className="text-muted" style={{ fontSize: '0.85rem' }}>{settings.brand?.giro}</p>
           </div>
           <div className="f-col">
-            <span className="ios-label">Clínica</span>
-            <a href="#especialidades">Tratamientos</a>
-            <a href="#casos">Casos Clínicos</a>
+            <span className="ios-label">Enlaces</span>
+            <a href="#inicio">Inicio</a>
+            <a href="#especialidades">Servicios</a>
+            <a href="#doctora">InformaciÃ³n</a>
+            <a href="#contacto">Contacto</a>
           </div>
           <div className="f-col">
-            <span className="ios-label">Contacto</span>
-            <a href="#">WhatsApp Urgencias</a>
-            <a href="#">Aviso de Privacidad</a>
+            <span className="ios-label">Atención</span>
+            <span className="text-muted" style={{ fontSize: '0.9rem' }}>{settings.contact?.phone}</span>
           </div>
         </div>
         <div className="footer-bottom-ios">
-          <span>&copy; 2026 Dra. Stephanie Ortega - Odontología Especializada. Consultorio con permiso COFEPRIS.</span>
+          <span>&copy; 2026 {settings.brand?.clinic_name}. Todos los derechos reservados.</span>
         </div>
       </footer>
 
-      {/* WhatsApp Widget */}
-      <div className="wa-ios-widget">
-        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="wa-floating-bubble glass-card">
-          Agenda tu cita en segundos
+      {/* WhatsApp Floating */}
+      <a href={waLink} target="_blank" rel="noreferrer" className="wa-ios-widget" style={{ textDecoration: 'none' }}>
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="wa-floating-bubble glass-card">
+          ¡Hola! Agenda aquí 👇
         </motion.div>
-        <button className="wa-ios-btn"><MessageCircle size={32} /></button>
-      </div>
+        <div className="wa-ios-btn">
+          <img src="/whatsapp.png" alt="WA" className="wa-img-white" />
+        </div>
+      </a>
 
       <style>{`
-        .landing-ios-premium { background: var(--bg-app); min-height: 100vh; overflow-x: hidden; }
-        
-        /* Headers & Nav */
-        .landing-header-ios { height: 80px; display: flex; align-items: center; width: 100%; position: fixed; top: 0; z-index: 1000; }
+        .landing-ios-premium { background: var(--bg-app); color: var(--text-primary); }
+        .ios-container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+        .glass-nav { height: 80px; display: flex; align-items: center; width: 100%; top: 0; z-index: 1000; background: rgba(var(--bg-app-rgb), 0.7); backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border); }
         .nav-flex { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .logo-ios { display: flex; align-items: center; gap: 0.75rem; font-weight: 800; font-size: 1.1rem; color: var(--text-primary); }
-        .logo-sparkle { background: var(--primary); color: white; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-        
         .nav-links-ios { display: flex; align-items: center; gap: 2rem; }
-        .nav-links-ios a { text-decoration: none; color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; transition: var(--transition); }
-        .nav-links-ios a:hover { color: var(--primary); }
-        .btn-ios-primary { background: var(--primary); color: white; padding: 0.6rem 1.25rem; border-radius: 12px; font-weight: 600; transition: var(--transition); }
-        .btn-ios-primary:hover { transform: scale(1.05); box-shadow: var(--shadow-ios); }
+        .nav-links-ios a { text-decoration: none; color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; }
+        .nav-actions-mobile { display: none; align-items: center; gap: 0.75rem; }
+        .mobile-menu-btn { display: flex; background: var(--primary-light); color: var(--primary); border: none; padding: 0.6rem; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; }
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(8px); z-index: 1999; }
+        .mobile-drawer-ios { position: fixed; top: 0; right: 0; width: 85%; height: 100vh; z-index: 2000; padding: 2.5rem; display: flex; flex-direction: column; border-radius: 0; border-left: 1px solid var(--glass-border); background: var(--bg-app); }
+        .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3.5rem; }
+        .close-drawer { background: var(--bg-app); border: 1px solid var(--glass-border); width: 44px; height: 44px; border-radius: 50%; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .drawer-links { display: flex; flex-direction: column; gap: 1.75rem; flex: 1; }
+        .drawer-links a { text-decoration: none; color: var(--text-primary); font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; }
 
-        /* Hero */
-        .hero-ios { padding-top: 180px; padding-bottom: 100px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 4rem; align-items: center; }
-        .hero-pill { display: inline-flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; border-radius: var(--radius-full); margin-bottom: 2rem; font-size: 0.8rem; font-weight: 700; color: var(--text-primary); }
-        .hero-sub { font-size: 1.15rem; color: var(--text-muted); margin-top: 1.5rem; line-height: 1.6; max-width: 480px; }
-        .hero-actions-ios { display: flex; gap: 1.5rem; margin-top: 2.5rem; }
-        .btn-ios-large { background: var(--primary); color: white; padding: 1.25rem 2.5rem; border-radius: 16px; font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 15px 30px var(--primary-light); cursor: pointer; transition: var(--transition); }
-        .btn-ios-large:hover { transform: translateY(-3px); }
+        .hero-ios { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; min-height: 80vh; }
+        .hero-pill { 
+          display: inline-flex; 
+          align-items: center; 
+          gap: 0.75rem; 
+          padding: 0.6rem 1.25rem; 
+          border-radius: 100px; 
+          font-size: 0.85rem; 
+          font-weight: 700; 
+          margin-bottom: 2.5rem; 
+          color: var(--primary);
+          background: var(--primary-light);
+          border: 1px solid var(--primary);
+        }
+        .display-text { font-size: 4.5rem; font-weight: 900; line-height: 1.1; letter-spacing: -0.04em; }
+        .hero-sub { font-size: 1.25rem; color: var(--text-muted); margin: 2rem 0 3rem; line-height: 1.6; max-width: 600px; }
+        
+        .btn-ios-pill { 
+          background: var(--primary); 
+          color: white; 
+          padding: 0.75rem 1.5rem; 
+          border-radius: 100px; 
+          font-weight: 700; 
+          font-size: 0.9rem; 
+          display: inline-flex; 
+          align-items: center; 
+          gap: 0.6rem; 
+          border: none; 
+          text-decoration: none;
+          transition: 0.3s;
+          box-shadow: 0 4px 12px var(--primary-glow);
+        }
+        .btn-ios-pill:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--primary-glow); }
+        .btn-ios-pill.large { padding: 1.1rem 2.5rem; font-size: 1.1rem; }
 
-        .hero-visual-ios { position: relative; }
-        .visual-stack { position: relative; height: 500px; margin-left: 2rem; }
-        .visual-card { position: absolute; box-shadow: var(--shadow-ios); overflow: hidden; }
-        .main-v { width: 100%; height: 100%; border-radius: 30px; }
+        .main-v { border-radius: 48px; overflow: hidden; aspect-ratio: 4/3; box-shadow: 0 30px 60px rgba(0,0,0,0.1); }
         .main-v img { width: 100%; height: 100%; object-fit: cover; }
-        .float-1 { bottom: 40px; left: -40px; width: 280px; padding: 1.5rem; z-index: 5; }
-        .v-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: var(--text-primary); font-weight: 800; font-size: 0.8rem; }
 
-        /* Profile Doctora */
-        .profile-section { padding: 80px 2rem; }
-        .profile-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 4rem; align-items: center; }
-        .profile-photo { position: relative; border-radius: 30px; padding: 1rem; }
-        .doc-img { width: 100%; height: auto; border-radius: 20px; aspect-ratio: 4/5; object-fit: cover; }
-        .doc-badge { position: absolute; bottom: -20px; right: -20px; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; font-weight: 700; font-size: 0.95rem; border-radius: 16px; }
-        .doc-bio { font-size: 1.1rem; color: var(--text-secondary); line-height: 1.7; margin: 1.5rem 0 2.5rem; }
-        .doc-credentials { list-style: none; display: flex; flex-direction: column; gap: 1rem; }
-        .doc-credentials li { display: flex; align-items: center; gap: 1rem; font-size: 1rem; font-weight: 600; color: var(--text-primary); }
+        .profile-section { padding: 120px 0; }
+        .profile-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 5rem; align-items: center; }
+        .profile-photo { padding: 1rem; border-radius: 40px; position: relative; }
+        .doc-img { width: 100%; border-radius: 32px; }
+        .doc-badge { position: absolute; bottom: -10px; right: -10px; padding: 1.25rem 2rem; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
 
-        /* Services */
-        .services-ios { padding: 100px 2rem; }
-        .section-head-ios { text-align: center; margin-bottom: 4rem; }
-        .display-text-sm { font-size: 3.2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; color: var(--text-primary); margin-top: 0.5rem; }
-        .section-head-ios p { font-size: 1.1rem; color: var(--text-muted); margin-top: 1rem; }
-        .ios-grid-services { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; }
+        .services-ios { padding: 120px 0; }
+        .section-head-ios { text-align: center; margin-bottom: 5rem; }
+        .display-text-sm { font-size: 3.5rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; }
+        
+        .bento-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          grid-auto-rows: 1fr;
+          gap: 1.5rem;
+        }
+        .bento-item {
+          display: flex;
+          flex-direction: column;
+          padding: 2.5rem;
+          border-radius: 32px;
+          height: 100%;
+          transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .bento-featured {
+          grid-column: span 2;
+          grid-row: span 1;
+        }
+        .bento-wide {
+          grid-column: span 2;
+        }
 
-        .service-widget-premium { padding: 2.5rem; display: flex; flex-direction: column; transition: var(--transition); cursor: default; }
-        .service-widget-premium:hover { transform: translateY(-8px); border-color: var(--primary); }
-        .s-icon-ios { width: 52px; height: 52px; background: var(--primary-light); color: var(--primary); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
-        .service-widget-premium h3 { font-size: 1.25rem; font-weight: 800; margin-bottom: 1.25rem; color: var(--text-primary); }
-        .service-sublist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; flex: 1; }
-        .service-sublist li { display: flex; align-items: flex-start; gap: 0.75rem; font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4; }
-
-        /* Cases (Slider) */
-        .cases-section { padding: 100px 2rem; }
-        .cases-slider { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2.5rem; margin-top: 4rem; }
-        .case-card { overflow: hidden; padding: 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
-        .case-images { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; border-radius: 16px; overflow: hidden; }
-        .img-wrap { position: relative; aspect-ratio: 1/1.2; }
-        .img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-        .img-wrap .label { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; padding: 0.3rem 0.8rem; border-radius: 8px; font-size: 0.7rem; font-weight: 700; backdrop-filter: blur(4px); }
-        .img-wrap .label.accent { background: var(--primary); }
-        .case-info h4 { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--text-primary); }
-        .case-info p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; }
-
-        /* Automation Bot */
-        .automation-ios { border-radius: 40px; background: var(--bg-surface); margin: 4rem 2rem; overflow: hidden; position: relative; border: 1px solid var(--glass-border); box-shadow: var(--shadow-ios); }
-        .automation-wrapper { display: grid; grid-template-columns: 1.2fr 1fr; gap: 4rem; padding: 6rem 2rem; }
-        .ios-features { list-style: none; margin-top: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
-        .ios-features li { display: flex; align-items: flex-start; gap: 1rem; color: var(--text-primary); font-weight: 600; font-size: 1rem; line-height: 1.4; }
-
-        .phone-mockup { width: 320px; height: 580px; border-radius: 40px; margin: 0 auto; background: var(--bg-app); border: 8px solid var(--glass-border); padding: 1rem; display: flex; flex-direction: column; overflow: hidden; }
-        .phone-mockup header { height: 40px; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; color: var(--text-primary); font-size: 0.8rem; font-weight: 700; }
-        .mock-chat { flex: 1; display: flex; flex-direction: column; gap: 1.25rem; padding: 1.5rem 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        .bubble { padding: 1rem; border-radius: 16px; font-size: 0.85rem; max-width: 85%; line-height: 1.5; }
-        .b-bot { background: var(--bg-surface); color: var(--text-primary); border-bottom-left-radius: 4px; border: 1px solid var(--glass-border); }
-        .b-user { background: var(--primary); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-
-        /* FAQ & Location */
-        .faq-location-section { padding: 80px 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; }
-        .accordion-list { display: flex; flex-direction: column; gap: 1rem; }
-        .accordion-item { padding: 1.5rem; border-radius: 16px; cursor: pointer; transition: var(--transition); border: 1px solid transparent; }
-        .accordion-item:hover { background: var(--bg-surface); border-color: var(--glass-border); }
-        .accordion-item.open { border-color: var(--primary); background: var(--primary-light); }
-        .acc-head { display: flex; justify-content: space-between; align-items: center; }
-        .acc-head h4 { font-size: 1.05rem; margin: 0; color: var(--text-primary); }
-        .acc-icon { color: var(--text-muted); transition: var(--transition); }
-        .accordion-item.open .acc-icon { transform: rotate(180deg); color: var(--primary); }
-        .acc-body { overflow: hidden; }
-        .acc-body p { margin-top: 1rem; margin-bottom: 0; font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; }
-
-        .location-wrap { padding: 3rem; display: flex; flex-direction: column; }
-        .map-placeholder { flex: 1; min-height: 250px; background: var(--bg-app); border-radius: 16px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2rem; }
-
-        /* Footer */
-        .footer-ios { padding: 6rem 0 3rem; border-top: 1px solid var(--glass-border); }
-        .footer-main { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 4rem; }
-        .f-col { display: flex; flex-direction: column; gap: 1rem; }
-        .f-col a { text-decoration: none; color: var(--text-muted); font-size: 0.95rem; font-weight: 500; transition: var(--transition); }
-        .f-col a:hover { color: var(--primary); }
-        .footer-bottom-ios { margin-top: 4rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; padding-top: 2rem; border-top: 1px solid var(--glass-border); }
-
-        /* WhatsApp Widget */
-        .wa-ios-widget { position: fixed; bottom: 32px; right: 32px; z-index: 2000; display: flex; flex-direction: column; align-items: flex-end; gap: 1rem; }
-        .wa-floating-bubble { padding: 1rem 1.5rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem; border-bottom-right-radius: 4px; border: 1px solid var(--glass-border); color: var(--text-primary); }
-        .wa-ios-btn { width: 64px; height: 64px; background: #25d366; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4); }
-
+        .bento-item.has-image {
+          padding: 0;
+          overflow: hidden;
+        }
+        .bento-image-wrap {
+          height: 180px;
+          width: 100%;
+          overflow: hidden;
+          position: relative;
+        }
+        .bento-featured .bento-image-wrap {
+          height: 220px;
+        }
+        .bento-image-wrap img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: 0.6s;
+        }
+        .bento-item:hover .bento-image-wrap img {
+          transform: scale(1.05);
+        }
+        .bento-header-info {
+          padding: 2.5rem;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+        }
+        
         @media (max-width: 1024px) {
-          .hero-ios, .profile-grid, .automation-wrapper, .faq-location-section, .footer-main { grid-template-columns: 1fr; gap: 4rem; }
-          .hero-ios { padding-top: 140px; text-align: center; padding-bottom: 60px; }
-          .hero-text-wrap { align-items: center; display: flex; flex-direction: column; }
-          .hero-visual-ios { margin-top: 2rem; }
-          .visual-stack { height: 400px; margin-left: 0; max-width: 500px; margin: 0 auto; }
-          .float-1 { display: none; }
-          .profile-photo { max-width: 400px; margin: 0 auto; }
-          .doc-badge { right: 10px; bottom: 10px; }
-          .display-text { font-size: 3.5rem; }
-          .display-text-sm { font-size: 2.5rem; }
-          .ios-features li { align-items: flex-start; text-align: left; }
-          .automation-wrapper { padding: 4rem 1.5rem; }
-          .footer-main { text-align: center; }
+          .bento-grid { grid-template-columns: repeat(2, 1fr); }
+          .bento-featured, .bento-wide { grid-column: span 2; }
+        }
+        @media (max-width: 768px) {
+          .bento-grid { grid-template-columns: 1fr; }
+          .bento-featured, .bento-wide { grid-column: span 1; }
+        }
+
+        .service-widget-premium:hover { transform: translateY(-12px); box-shadow: 0 30px 60px rgba(0,0,0,0.08); }
+        .s-icon-ios { width: 56px; height: 56px; background: var(--primary-light); color: var(--primary); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
+        .gallery-item { border-radius: 28px; overflow: hidden; position: relative; aspect-ratio: 1; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.6s; }
+        .gallery-item:hover img { scale: 1.1; }
+        .gallery-overlay { position: absolute; inset: 0; background: rgba(var(--primary-rgb), 0.2); backdrop-filter: blur(4px); opacity: 0; display: flex; align-items: center; justify-content: center; color: white; transition: 0.3s; }
+        .gallery-item:hover .gallery-overlay { opacity: 1; }
+
+        .accordion-list { max-width: 900px; margin: 4rem auto; display: flex; flex-direction: column; gap: 1.5rem; }
+        .accordion-item { padding: 1.75rem 2rem; border-radius: 24px; cursor: pointer; transition: 0.3s; border: 1px solid var(--glass-border); }
+        .accordion-item:hover { background: rgba(var(--bg-app-rgb), 0.5); }
+        .acc-head { display: flex; justify-content: space-between; align-items: center; }
+        .acc-head h4 { font-size: 1.15rem; font-weight: 700; }
+        .acc-icon { transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); color: var(--primary); }
+        .accordion-item.open { border-color: var(--primary); box-shadow: 0 10px 30px var(--primary-glow); }
+        .accordion-item.open .acc-icon { transform: rotate(180deg); }
+        .acc-body { padding-top: 1.25rem; color: var(--text-muted); line-height: 1.6; }
+
+        .location-grid { display: grid; grid-template-columns: 1fr 1.5fr; min-height: 500px; border-radius: 40px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.1); border: 1px solid var(--glass-border); }
+        .loc-info { padding: 4rem; display: flex; flex-direction: column; justify-content: center; }
+        .loc-map { background: #eee; }
+
+        @media (max-width: 768px) {
+          .nav-links-ios { display: none; }
+          .nav-actions-mobile { display: flex; }
+          .hero-ios { padding-top: 140px !important; text-align: center; grid-template-columns: 1fr; min-height: auto; }
+          .hero-text-wrap { display: flex; flex-direction: column; align-items: center; }
+          .display-text { font-size: 2.8rem; line-height: 1.1; }
+          .location-grid { grid-template-columns: 1fr; min-height: auto; }
+          .loc-info { padding: 2rem; }
+          .loc-map { height: 300px; }
+          .footer-main { grid-template-columns: 1fr; gap: 2.5rem; text-align: center; }
           .f-col { align-items: center; }
         }
 
+        .footer-ios { padding: 6rem 0 3rem; border-top: 1px solid var(--glass-border); }
+        .footer-main { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 4rem; }
+        .f-col { display: flex; flex-direction: column; gap: 1rem; }
+        .f-col a { text-decoration: none; color: var(--text-muted); }
+        .footer-bottom-ios { margin-top: 4rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--glass-border); padding-top: 2rem; }
+
+        .wa-ios-widget { position: fixed; bottom: 30px; right: 30px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; gap: 1rem; }
+        .wa-floating-bubble { padding: 1rem 1.5rem; border-radius: 20px; font-weight: 700; border-bottom-right-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .wa-ios-btn { width: 64px; height: 64px; background: #25d366; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 15px 35px rgba(37,211,102,0.5); transition: 0.3s; }
+        .wa-ios-btn:hover { transform: scale(1.1) rotate(5deg); }
+        .wa-img-white { width: 34px; height: 34px; filter: brightness(0) invert(1); }
+
+        .ios-label { 
+          display: block; 
+          text-transform: uppercase; 
+          letter-spacing: 0.15em; 
+          font-size: 0.75rem; 
+          font-weight: 800; 
+          color: var(--primary); 
+          margin-bottom: 1rem; 
+        }
+
+        .btn-ios-large { 
+          background: linear-gradient(135deg, var(--primary), var(--accent)); 
+          color: white; 
+          padding: 1.4rem 3.5rem; 
+          border-radius: 24px; 
+          font-weight: 800; 
+          font-size: 1.2rem; 
+          display: inline-flex; 
+          align-items: center; 
+          gap: 1rem; 
+          box-shadow: 0 20px 40px var(--primary-glow); 
+          transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        .btn-ios-large:hover { 
+          transform: translateY(-6px) scale(1.03); 
+          box-shadow: 0 30px 60px var(--primary-glow); 
+        }
+
+        /* Lightbox & Gallery */
+        .lightbox-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 2rem; cursor: zoom-out; }
+        .lightbox-img { max-width: 100%; max-height: 90vh; border-radius: 20px; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        .close-lightbox { position: absolute; top: 2rem; right: 2rem; background: rgba(255,255,255,0.1); border: none; color: white; cursor: pointer; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+        @media (max-width: 1024px) {
+          .hero-ios, .profile-grid, .location-grid, .footer-main { grid-template-columns: 1fr; }
+          .display-text { font-size: 3rem; }
+          .hero-ios { text-align: center; padding-top: 140px; }
+          .hero-text-wrap { align-items: center; }
+          .loc-map { height: 300px; }
+        }
+
         @media (max-width: 768px) {
-          .landing-header-ios { height: 70px; }
-          .nav-links-ios a { display: none; }
-          .nav-links-ios { gap: 1rem; }
-          .ios-grid-services { grid-template-columns: 1fr; }
-          .hero-actions-ios { flex-direction: column; width: 100%; max-width: 320px; }
-          .btn-ios-large { width: 100%; justify-content: center; padding: 1rem; font-size: 1rem; }
-          .display-text { font-size: 2.8rem; }
-          .hero-sub { font-size: 1rem; }
-          .cases-slider { grid-template-columns: 1fr; }
-          .automation-ios { margin: 2rem 1rem; border-radius: 24px; }
-          .phone-mockup { width: 100%; max-width: 280px; height: 500px; }
-          .faq-location-section { gap: 3rem; }
-          .location-wrap { padding: 2rem 1.5rem; }
+          .nav-links-ios { display: none; }
+          .nav-actions-mobile { display: flex; }
+          .display-text { font-size: 2.5rem; }
+          .display-text-sm { font-size: 2.2rem; }
+          .ios-container { padding: 0 1.5rem; }
+          .hero-ios { padding-top: 100px; }
+          .bento-grid { grid-template-columns: 1fr; }
+          .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
         }
       `}</style>
     </div>

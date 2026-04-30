@@ -40,10 +40,10 @@ CREATE TABLE IF NOT EXISTS appointments (
 CREATE TABLE IF NOT EXISTS bot_settings (
     id INT PRIMARY KEY DEFAULT 1,
     is_active BOOLEAN DEFAULT TRUE,
-    ai_model VARCHAR(50) DEFAULT 'gemini-1.5-flash',
+    ai_model VARCHAR(50) DEFAULT 'gemini-flash-latest',
     system_prompt TEXT
 );
 
 -- Datos iniciales de configuración
 INSERT IGNORE INTO bot_settings (id, is_active, ai_model, system_prompt) 
-VALUES (1, TRUE, 'gemini-1.5-flash', 'Eres el asistente inteligente de la Dra. Stephanie Ortega. Tu objetivo es agendar citas dentales. Sé amable, profesional y clasifica al paciente según sus necesidades (Limpieza, Estética, Dolor, etc).');
+VALUES (1, TRUE, 'gemini-flash-latest', 'Eres el asistente inteligente de la Dra. Stephanie Ortega. Tu objetivo es agendar citas dentales. Sé amable, profesional y clasifica al paciente según sus necesidades (Limpieza, Estética, Dolor, etc).');
