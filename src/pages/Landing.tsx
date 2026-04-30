@@ -646,6 +646,52 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
         .desktop-hero-container { display: block; }
         .mobile-hero-container { display: none; }
         
+        .service-widget-premium:hover { transform: translateY(-12px); box-shadow: 0 30px 60px rgba(0,0,0,0.08); }
+        .s-icon-ios { width: 56px; height: 56px; background: var(--primary-light); color: var(--primary); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
+        .gallery-item { border-radius: 28px; overflow: hidden; position: relative; aspect-ratio: 1; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.6s; }
+        .gallery-item:hover img { scale: 1.1; }
+        .gallery-overlay { position: absolute; inset: 0; background: rgba(var(--primary-rgb), 0.2); backdrop-filter: blur(4px); opacity: 0; display: flex; align-items: center; justify-content: center; color: white; transition: 0.3s; }
+        .gallery-item:hover .gallery-overlay { opacity: 1; }
+
+        .accordion-list { max-width: 900px; margin: 4rem auto; display: flex; flex-direction: column; gap: 1.5rem; }
+        .accordion-item { padding: 1.75rem 2rem; border-radius: 24px; cursor: pointer; transition: 0.3s; border: 1px solid var(--glass-border); }
+        .accordion-item:hover { background: rgba(var(--bg-app-rgb), 0.5); }
+        .acc-head { display: flex; justify-content: space-between; align-items: center; }
+        .acc-head h4 { font-size: 1.15rem; font-weight: 700; }
+        .acc-icon { transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); color: var(--primary); }
+        .accordion-item.open { border-color: var(--primary); box-shadow: 0 10px 30px var(--primary-glow); }
+        .accordion-item.open .acc-icon { transform: rotate(180deg); }
+        .acc-body { padding-top: 1.25rem; color: var(--text-muted); line-height: 1.6; }
+
+        .location-grid { display: grid; grid-template-columns: 1fr 1.5fr; min-height: 500px; border-radius: 40px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.1); border: 1px solid var(--glass-border); }
+        .loc-info { padding: 4rem; display: flex; flex-direction: column; justify-content: center; }
+        .loc-map { background: #eee; }
+
+        .footer-ios { padding: 6rem 0 3rem; border-top: 1px solid var(--glass-border); }
+        .footer-main { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 4rem; }
+        .f-col { display: flex; flex-direction: column; gap: 1rem; }
+        .f-col a { text-decoration: none; color: var(--text-muted); }
+        .footer-bottom-ios { margin-top: 4rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--glass-border); padding-top: 2rem; }
+
+        .wa-ios-widget { position: fixed; bottom: 30px; right: 30px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; gap: 1rem; }
+        .wa-floating-bubble { padding: 1rem 1.5rem; border-radius: 20px; font-weight: 700; border-bottom-right-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .wa-ios-btn { width: 64px; height: 64px; background: #25d366; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 15px 35px rgba(37,211,102,0.5); transition: 0.3s; }
+        .wa-ios-btn:hover { transform: scale(1.1) rotate(5deg); }
+        .wa-img-white { width: 34px; height: 34px; filter: brightness(0) invert(1); }
+
+        .ios-label { 
+          display: block; 
+          text-transform: uppercase; 
+          letter-spacing: 0.15em; 
+          font-size: 0.75rem; 
+          font-weight: 800; 
+          color: var(--primary); 
+          margin-bottom: 1rem; 
+        }
+
         @media (max-width: 1024px) {
           .bento-grid { grid-template-columns: repeat(2, 1fr); }
           .bento-featured, .bento-wide { grid-column: span 2; }
