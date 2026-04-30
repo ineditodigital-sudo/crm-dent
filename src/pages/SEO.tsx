@@ -282,9 +282,13 @@ const SEOPage = () => {
         .spinning { animation: spin 1s linear infinite; }
 
         @media (max-width: 768px) {
-          .seo-grid { grid-template-columns: 1fr; }
+          .seo-grid { grid-template-columns: 1fr; gap: 1rem; }
           .editor-grid { grid-template-columns: 1fr; }
-          .page-header { flex-direction: column; gap: 1.5rem; }
+          .page-header { flex-direction: column; gap: 1rem; align-items: stretch; }
+          .btn-primary { justify-content: center; width: 100%; }
+          .page-title { font-size: 1.5rem; }
+          .seo-section { padding: 1.25rem; }
+          .char-count { font-size: 0.65rem; }
         }
       `}</style>
     </div>

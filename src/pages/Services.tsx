@@ -183,7 +183,16 @@ const ServicesPage = () => {
         .btn-ghost{padding:.75rem 1.5rem;border-radius:var(--radius-full);font-weight:600;color:var(--text-secondary);background:var(--glass);display:flex;align-items:center;gap:.5rem;font-size:.9rem}
         @keyframes spin{to{transform:rotate(360deg)}}
         .spinning{animation:spin .8s linear infinite}
-        @media(max-width:768px){.form-grid{grid-template-columns:1fr}.services-header{flex-direction:column;gap:1rem}}
+        @media(max-width:768px){
+          .form-grid{grid-template-columns:1fr}
+          .services-header{flex-direction:column;gap:1rem; align-items: stretch;}
+          .btn-primary { justify-content: center; width: 100%; }
+          .page-title { font-size: 1.5rem; }
+          .service-form-card { padding: 1.25rem; }
+          .form-actions { flex-direction: column; }
+          .form-actions button { width: 100%; justify-content: center; }
+          .services-grid { grid-template-columns: 1fr; }
+        }
       `}</style>
     </div>
   );

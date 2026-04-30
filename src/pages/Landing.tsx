@@ -647,22 +647,39 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
         .close-lightbox { position: absolute; top: 2rem; right: 2rem; background: rgba(255,255,255,0.1); border: none; color: white; cursor: pointer; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
         @media (max-width: 1024px) {
-          .hero-ios, .profile-grid, .location-grid, .footer-main { grid-template-columns: 1fr; }
-          .display-text { font-size: 3rem; }
-          .hero-ios { text-align: center; padding-top: 140px; }
-          .hero-text-wrap { align-items: center; }
-          .loc-map { height: 300px; }
+          .hero-ios, .profile-grid, .location-grid, .footer-main { grid-template-columns: 1fr; gap: 3rem; }
+          .display-text { font-size: 3.5rem; }
+          .hero-ios { text-align: center; gap: 3rem; }
+          .hero-sub { margin: 1.5rem auto 2.5rem; }
+          .hero-text-wrap { display: flex; flex-direction: column; align-items: center; }
+          .loc-map { height: 350px; }
+          .loc-info { padding: 3rem 1.5rem; text-align: center; align-items: center; }
         }
 
         @media (max-width: 768px) {
           .nav-links-ios { display: none; }
-          .nav-actions-mobile { display: flex; }
-          .display-text { font-size: 2.5rem; }
-          .display-text-sm { font-size: 2.2rem; }
-          .ios-container { padding: 0 1.5rem; }
-          .hero-ios { padding-top: 100px; }
-          .bento-grid { grid-template-columns: 1fr; }
+          .nav-actions-mobile { display: flex; align-items: center; gap: 0.75rem; }
+          .display-text { font-size: 2.75rem; letter-spacing: -0.03em; }
+          .display-text-sm { font-size: 2.25rem; }
+          .ios-container { padding: 0 1.25rem; }
+          .hero-ios { padding-top: 100px; padding-bottom: 4rem; }
+          .btn-ios-large { width: 100%; padding: 1.25rem 2rem; font-size: 1.1rem; justify-content: center; }
+          .profile-section, .services-ios, .cases-section, .faq-section { padding: 4rem 0; }
+          .section-head-ios { margin-bottom: 3rem; }
+          .bento-grid { grid-template-columns: 1fr; gap: 1rem; }
+          .bento-item { padding: 1.5rem; }
+          .bento-header-info { padding: 1.5rem; }
           .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+          .accordion-item { padding: 1.25rem 1.5rem; }
+          .footer-main { gap: 2.5rem; }
+          .wa-ios-widget { bottom: 20px; right: 20px; }
+          .wa-floating-bubble { display: none; }
+          .mobile-theme-wrap { display: flex; }
+        }
+        @media (max-width: 480px) {
+          .display-text { font-size: 2.25rem; }
+          .gallery-grid { grid-template-columns: 1fr; }
+          .doc-badge { padding: 1rem; font-size: 0.8rem; }
         }
       `}</style>
     </div>

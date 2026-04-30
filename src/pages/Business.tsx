@@ -550,15 +550,19 @@ const BusinessPage = () => {
         .spinning { animation: spin .8s linear infinite; }
 
         @media(max-width: 1024px) {
-          .biz-grid { grid-template-columns: 1fr; }
+          .biz-grid { grid-template-columns: 1fr; gap: 1rem; }
           .logo-grid { grid-template-columns: 1fr 1fr; }
           .identity-preview { grid-column: 1; }
+          .biz-section { padding: 1.25rem; }
         }
         @media(max-width: 768px) {
-          .biz-header { flex-direction: column; }
+          .biz-header { flex-direction: column; align-items: stretch; gap: 1rem; }
           .save-all-btn { width: 100%; justify-content: center; }
           .logo-grid { grid-template-columns: 1fr; }
-          .color-presets { gap: .5rem; }
+          .color-presets { gap: 0.5rem; }
+          .page-title { font-size: 1.5rem; }
+          .hours-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+          .hours-times { width: 100%; justify-content: space-between; }
         }
       `}</style>
     </div>

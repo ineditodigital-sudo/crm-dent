@@ -100,8 +100,17 @@ const WhatsAppConnect = () => {
 
                 <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '350px' }}>
                     {!status.connected && qrImageUrl ? (
-                        <div style={{ background: 'white', padding: '1.5rem', borderRadius: '20px', boxShadow: 'var(--shadow-ios)' }}>
-                            <img src={qrImageUrl} alt="WhatsApp QR" style={{ width: '250px', height: '250px' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+                            {/* Mobile Warning */}
+                            {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (
+                                <div style={{ background: 'rgba(255, 183, 0, 0.1)', color: 'var(--warning)', padding: '1rem', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.75rem', maxWidth: '300px', textAlign: 'left', border: '1px solid rgba(255,183,0,0.2)' }}>
+                                    <Smartphone size={24} style={{ flexShrink: 0 }} />
+                                    <span>Estás en móvil. Escanea este código usando <strong>otro dispositivo</strong> con WhatsApp.</span>
+                                </div>
+                            )}
+                            <div style={{ background: 'white', padding: '1.5rem', borderRadius: '20px', boxShadow: 'var(--shadow-ios)' }}>
+                                <img src={qrImageUrl} alt="WhatsApp QR" style={{ width: '250px', height: '250px' }} />
+                            </div>
                         </div>
                     ) : !status.connected ? (
                         <div style={{ textAlign: 'center', padding: '3rem 0' }}>

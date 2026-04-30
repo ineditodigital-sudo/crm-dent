@@ -314,11 +314,14 @@ const PatientsPage = () => {
         @keyframes spin{to{transform:rotate(360deg)}}
         .spinning{animation:spin .8s linear infinite}
         @media(max-width:900px){
-          .patients-layout{grid-template-columns:1fr;height:auto}
-          .patient-detail{min-height:calc(100vh - 250px)}
+          .patients-layout{grid-template-columns:1fr;height:auto; min-height: calc(100vh - 200px);}
+          .patient-detail{min-height:calc(100vh - 250px); padding: 1.25rem;}
           .hide-mobile{display:none !important}
-          .mobile-back-btn{display:flex}
-          .patients-header{flex-direction:column;gap:1rem}
+          .mobile-back-btn{display:flex; margin-bottom: 1rem;}
+          .patients-header{flex-direction:column;gap:1rem; align-items: stretch;}
+          .btn-ghost { justify-content: center; width: 100%; }
+          .page-title { font-size: 1.5rem; }
+          .detail-name { font-size: 1.25rem; }
         }
       `}</style>
     </div>

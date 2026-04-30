@@ -220,9 +220,21 @@ const ReportsPage = () => {
         @keyframes spin{to{transform:rotate(360deg)}}
         .spinning{animation:spin .8s linear infinite}
         @media(max-width:768px){
-          .charts-grid{grid-template-columns:1fr}
-          .stats-grid{grid-template-columns:1fr 1fr}
-          .reports-header{flex-direction:column;gap:1rem}
+          .charts-grid{grid-template-columns:1fr; gap: 1rem;}
+          .stats-grid{grid-template-columns:1fr 1fr; gap: 0.75rem;}
+          .reports-header{flex-direction:column;gap:0.75rem; align-items: stretch;}
+          .reports-page{gap: 1.25rem;}
+          .page-title { font-size: 1.5rem; }
+          .stat-value { font-size: 1.25rem; }
+          .stat-card { padding: 1rem; }
+          .ai-header { flex-direction: column; align-items: stretch; gap: 1rem; }
+          .btn-ai { justify-content: center; }
+          .apps-table { font-size: 0.75rem; }
+          .apps-table th, .apps-table td { padding: 0.5rem 0.4rem; }
+        }
+        @media(max-width:480px){
+          .stats-grid{grid-template-columns:1fr;}
+          .bar-label { width: 80px; font-size: 0.7rem; }
         }
       `}</style>
     </div>
