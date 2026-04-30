@@ -23,11 +23,11 @@ const navItems = [
   { icon: <Calendar size={18} />, label: 'Agenda', path: '/admin/calendar' },
   { icon: <Users size={18} />, label: 'Pacientes', path: '/admin/patients' },
   { icon: <LayoutGrid size={18} />, label: 'Servicios', path: '/admin/services' },
+  { icon: <BarChart3 size={18} />, label: 'Reportes', path: '/admin/reports' },
   { icon: <Search size={18} />, label: 'SEO & Marketing', path: '/admin/seo' },
   { icon: <Building2 size={18} />, label: 'Negocio', path: '/admin/business' },
   { icon: <Globe size={18} />, label: 'Editor Web', path: '/admin/web-editor' },
   { icon: <Settings size={18} />, label: 'Configuración', path: '/admin/settings' },
-  { icon: <BarChart3 size={18} />, label: 'Reportes', path: '/admin/reports' },
 ];
 
 const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobileOpen: (o: boolean) => void }) => {
