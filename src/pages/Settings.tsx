@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Plug, ScrollText } from 'lucide-react';
 import ConnectionsPage from './Connections';
 import LogsPage from './Logs';

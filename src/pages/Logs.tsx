@@ -119,7 +119,7 @@ const LogsPage = () => {
               ))
             ) : (
               <div className="logs-empty">
-                <Terminal size={48} />
+                <ScrollText size={48} />
                 <p>No se encontraron registros que coincidan.</p>
               </div>
             )}
