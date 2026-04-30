@@ -183,12 +183,6 @@ const CRMLayout = ({ children }: { children: React.ReactNode }) => {
       <main className="main-content">
         <header className="content-header glass-nav">
           <div className="header-breadcrumbs">
-            <button 
-              className="mobile-hamburger-trigger"
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <Menu size={24} />
-            </button>
             <h2 className="current-path">{pathLabel[location.pathname] || 'Panel'}</h2>
           </div>
            <div className="header-actions">
@@ -207,6 +201,12 @@ const CRMLayout = ({ children }: { children: React.ReactNode }) => {
                title="Cerrar sesión"
              >
                <LogOut size={16} />
+             </button>
+             <button 
+               className="mobile-hamburger-trigger"
+               onClick={() => setIsSidebarOpen(true)}
+             >
+               <Menu size={24} />
              </button>
           </div>
         </header>
