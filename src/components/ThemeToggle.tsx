@@ -14,20 +14,30 @@ export const ThemeToggle = () => {
       {isDark ? <Sun size={20} className="text-warning" /> : <Moon size={20} className="text-accent" />}
       <style>{`
         .nav-theme-toggle {
-          width: 44px;
-          height: 44px;
+          width: 42px;
+          height: 42px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 50%;
-          background: var(--bg-surface);
+          border-radius: 12px;
+          background: var(--glass-bg);
           border: 1px solid var(--glass-border);
-          box-shadow: var(--shadow-ios);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
           transition: var(--transition);
+          color: var(--text-primary);
         }
         .nav-theme-toggle:hover {
-          transform: scale(1.05);
-          background: var(--bg-card);
+          transform: translateY(-2px);
+          background: var(--bg-surface);
+          border-color: var(--primary);
+        }
+        @media (max-width: 768px) {
+          .nav-theme-toggle {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-surface);
+            border-color: var(--glass-border);
+          }
         }
       `}</style>
     </button>

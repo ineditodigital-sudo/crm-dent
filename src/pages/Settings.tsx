@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Plug, Terminal } from 'lucide-react';
+import { Plug, ScrollText } from 'lucide-react';
 import ConnectionsPage from './Connections';
 import LogsPage from './Logs';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,7 +11,7 @@ const SettingsPage = () => {
       <div className="settings-header">
         <div>
           <h1 className="page-title">Configuración</h1>
-          <p className="page-sub">Panel técnico para el desarrollador. Gestiona conexiones y monitorea el sistema.</p>
+          <p className="page-sub">Panel técnico y monitorización del sistema.</p>
         </div>
       </div>
 
@@ -21,13 +20,13 @@ const SettingsPage = () => {
           className={`tab-btn ${activeTab === 'connections' ? 'active' : ''}`}
           onClick={() => setActiveTab('connections')}
         >
-          <Plug size={18} /> Conexiones API
+          <Plug size={18} /> Conexiones
         </button>
         <button 
           className={`tab-btn ${activeTab === 'logs' ? 'active' : ''}`}
           onClick={() => setActiveTab('logs')}
         >
-          <Terminal size={18} /> Logs del Sistema
+          <ScrollText size={18} /> Log Sistema
         </button>
       </div>
 

@@ -188,7 +188,7 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
           </div>
 
           <div className="nav-actions-mobile">
-             {!previewSettings && <ThemeToggle />}
+             {!previewSettings && <div className="mobile-theme-wrap"><ThemeToggle /></div>}
              <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(true)}>
                <Menu size={24} />
              </button>

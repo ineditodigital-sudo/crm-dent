@@ -104,7 +104,7 @@ const Conversations = () => {
   );
 
   return (
-    <div className="conv-wrap animate-ios">
+    <div className={`conv-wrap animate-ios ${selectedChat ? 'is-chat-open' : ''}`}>
       {/* ── Chat List ── */}
       <div className="conv-list glass-card">
         <div className="conv-list-header">
@@ -364,19 +364,22 @@ const Conversations = () => {
           .conv-wrap { flex-direction: row; height: calc(100dvh - 140px); overflow: hidden; position: relative; }
           .conv-list { 
             position: absolute; inset: 0; width: 100%; z-index: 10; 
-            transform: ${selectedChat ? 'translateX(-100%)' : 'translateX(0)'};
+            transform: translateX(0);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
+          .conv-wrap.is-chat-open .conv-list { transform: translateX(-100%); }
           .conv-chat { 
             position: absolute; inset: 0; width: 100%; z-index: 5;
-            transform: ${selectedChat ? 'translateX(0)' : 'translateX(100%)'};
+            transform: translateX(100%);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           }
+          .conv-wrap.is-chat-open .conv-chat { transform: translateX(0); }
           .mobile-back-btn { display: flex; align-items: center; justify-content: center; }
           .chat-head { padding: 0.75rem 1rem; }
           .chat-messages { padding: 1rem; }
           .msg-bubble { max-width: 85%; }
           .chat-foot { padding: 0.75rem 1rem; }
+          .conv-row-actions { opacity: 1; }
         }
         @media (max-width: 600px) {
           .conv-row-actions { opacity: 1; }

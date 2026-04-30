@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Terminal, RefreshCw, AlertCircle, Info, CheckCircle, Search, Clock } from 'lucide-react';
+import { ScrollText, RefreshCw, AlertCircle, Info, CheckCircle, Search, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -56,7 +56,7 @@ const LogsPage = () => {
       <header className="logs-header">
         <div className="header-info">
           <h1 className="page-title">
-            <Terminal className="title-icon" /> Log del Sistema
+            <ScrollText className="title-icon" /> Log del Sistema
           </h1>
           <p className="page-subtitle">Actividad técnica y errores del bot en tiempo real.</p>
         </div>

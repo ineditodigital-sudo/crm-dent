@@ -189,13 +189,15 @@ const CRMLayout = ({ children }: { children: React.ReactNode }) => {
             >
               <Menu size={24} />
             </button>
-            <h2 className="current-path">{pathLabel[location.pathname] || location.pathname.slice(1)}</h2>
+            <h2 className="current-path">{pathLabel[location.pathname] || 'Panel'}</h2>
           </div>
            <div className="header-actions">
              <NotificationBell />
-             <WhatsAppStatus />
+             <div className="mobile-hide-status">
+               <WhatsAppStatus />
+             </div>
              <ThemeToggle />
-             <div className="user-profile glass-card">
+             <div className="user-profile glass-card mobile-hide">
                <div className="u-avatar">{user.charAt(0).toUpperCase()}</div>
                <span className="u-name">{user}</span>
              </div>
@@ -355,9 +357,9 @@ const CRMLayout = ({ children }: { children: React.ReactNode }) => {
           }
           .current-path { font-size: 1rem; }
           .header-actions { gap: 0.5rem; }
-          .user-profile { display: none; }
-          .logout-btn { display: none; }
-          
+          .user-profile.mobile-hide { display: none; }
+          .mobile-hide-status { display: none; }
+          .logout-btn { display: flex; opacity: 1; color: #ff3b30; }
           .scrollable-content { 
             padding: 1rem; 
             height: 100%;

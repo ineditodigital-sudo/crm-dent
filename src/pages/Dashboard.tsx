@@ -201,12 +201,12 @@ const Dashboard = () => {
         .alert-content span { font-size: 0.8rem; color: var(--text-muted); }
         .alert-time { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; }
 
-        .action-btn-ios { background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 10px; font-size: 0.8rem; font-weight: 700; opacity: 0; transition: var(--transition); }
-        .alert-item:hover .action-btn-ios { opacity: 1; }
+        .action-btn-ios { background: var(--primary); color: white; padding: 0.5rem 0.75rem; border-radius: 10px; font-size: 0.75rem; font-weight: 700; opacity: 1; transition: var(--transition); }
+        .alert-item:hover .action-btn-ios { transform: scale(1.05); }
 
         .performance-widget { display: flex; flex-direction: column; height: 100%; }
-        .chart-placeholder { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 1rem; padding: 2rem 0; min-height: 150px; }
-        .bar { width: 12px; background: var(--bg-app); border-radius: 6px; transition: var(--transition); }
+        .chart-placeholder { flex: 1; display: flex; align-items: flex-end; justify-content: center; gap: 0.75rem; padding: 1.5rem 0; min-height: 120px; }
+        .bar { width: 10px; background: var(--bg-app); border-radius: 5px; transition: var(--transition); }
         .bar.active { background: var(--primary); box-shadow: 0 0 15px var(--primary-light); }
         
         .chart-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding-top: 1.5rem; border-top: 1px solid var(--glass-border); }
@@ -216,9 +216,18 @@ const Dashboard = () => {
           .dashboard-main-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 768px) {
-          .dashboard-ios { gap: 1.5rem; padding-bottom: 80px; } /* Space for bottom nav */
-          .display-text { font-size: 2.5rem; }
-          .chart-stats { grid-template-columns: 1fr; }
+          .dashboard-ios { gap: 1.25rem; padding-bottom: 2rem; }
+          .display-text { font-size: 2rem; }
+          .subtitle { font-size: 0.95rem; }
+          .widgets-grid-ios { grid-template-columns: 1fr 1fr; gap: 1rem; }
+          .widget-value { font-size: 1.75rem; }
+          .widget-ios { padding: 1.25rem; }
+          .chart-stats { grid-template-columns: 1fr; gap: 1.5rem; }
+          .alert-item { padding: 1rem; gap: 0.75rem; }
+          .alert-content span { max-width: 120px !important; }
+        }
+        @media (max-width: 480px) {
+          .widgets-grid-ios { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>
