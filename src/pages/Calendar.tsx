@@ -26,9 +26,8 @@ const CalendarPage = () => {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [deletingId] = useState<string | null>(null);
   const [form, setForm] = useState({
-    patient_name: '',
+    contact_name: '',
     appointment_date: '',
     appointment_time: '09:00',
     description: '',
@@ -52,8 +51,9 @@ const CalendarPage = () => {
         ...a,
         date: new Date(a.appointment_date || a.date),
         time: a.time || new Date(a.appointment_date).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: true }),
-        patient: a.patient || a.patient_name || 'Sin nombre',
-        type: a.type || a.description || 'Cita',
+        contact: a.contact_name || a.contact_name_db || a.contact || 'Sin nombre',
+        contact_phone: a.contact_phone || '',
+        type: a.description || a.type || 'Cita',
       }));
       setAppointments(normalized);
     } catch (err: any) {
@@ -75,22 +75,33 @@ const CalendarPage = () => {
   useEffect(() => { fetchAppointments(); fetchUpcoming(); }, [fetchAppointments, fetchUpcoming]);
 
   const handleCancel = async (id: string | number) => {
-    const app = appointments.find(a => String(a.id) === String(id)) || upcoming.find(a => String(a.id) === String(id));
-    if (!confirm('⚠️ ATENCIÓN: Al cancelar esta cita se eliminará permanentemente de Google Calendar y del sistema. ¿Deseas continuar?')) return;
+    const idStr = String(id);
+    console.log('Cancelando cita:', idStr);
     
-    setCancellingId(String(id));
+    const app = appointments.find(a => String(a.id) === idStr) || upcoming.find(a => String(a.id) === idStr);
+    
+    if (!confirm('⚠️ ¿Estás seguro de que deseas eliminar esta cita?')) return;
+    
+    setCancellingId(idStr);
     try {
       const res = await fetch(`${API_BASE}/api/appointments/${id}/cancel`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${getToken()}` }
       });
+      
+      const data = await res.json();
+      
       if (res.ok) {
+        // Optimistic update: remove from local state immediately
+        setAppointments(prev => prev.filter(a => String(a.id) !== idStr));
+        setUpcoming(prev => prev.filter(a => String(a.id) !== idStr));
         setCancelledApp(app);
-        fetchAppointments();
-        fetchUpcoming();
+      } else {
+        alert('Error del servidor: ' + (data.error || 'No se pudo cancelar'));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert('Error de red: ' + err.message);
     } finally {
       setCancellingId(null);
     }
@@ -98,17 +109,27 @@ const CalendarPage = () => {
 
   const contactCancelled = () => {
     if (!cancelledApp) return;
-    const phone = cancelledApp.patient_phone || '';
-    const name = cancelledApp.patient_name || cancelledApp.patient || 'Paciente';
-    const date = format(new Date(cancelledApp.appointment_date || cancelledApp.date), "d 'de' MMMM 'a las' HH:mm", { locale: es });
-    const msg = `Hola ${name}, te contacto de la clínica para comentarte que lamentablemente tuvimos que cancelar tu cita del ${date}. ¿Te gustaría reagendar para otro momento?`;
-    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+    const phone = cancelledApp.contact_phone || '';
+    const name = cancelledApp.contact_name || cancelledApp.contact || 'Cliente';
+    const rawDate = cancelledApp.appointment_date || cancelledApp.date;
+    const dateStr = rawDate ? format(new Date(rawDate), "d 'de' MMMM 'a las' HH:mm", { locale: es }) : 'tu cita agendada';
+    
+    const msg = `Hola ${name}, te contacto para informarte que lamentablemente hemos tenido que cancelar tu cita del ${dateStr}. ¿Te gustaría que la reagendemos para otro momento?`;
+    
+    if (!phone) {
+      alert('No se encontró el teléfono del cliente para redirigir a WhatsApp.');
+      setCancelledApp(null);
+      return;
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, '_blank');
     setCancelledApp(null);
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.patient_name || !form.appointment_date) {
+    if (!form.contact_name || !form.appointment_date) {
       setError('Nombre y fecha son requeridos');
       return;
     }
@@ -123,15 +144,15 @@ const CalendarPage = () => {
           Authorization: `Bearer ${getToken()}`
         },
         body: JSON.stringify({
-          patient_name: form.patient_name,
+          contact_name: form.contact_name,
           appointment_date: isoDate,
-          description: form.description || `Cita: ${form.patient_name}`,
+          description: form.description || `Cita: ${form.contact_name}`,
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al guardar');
       setShowModal(false);
-      setForm({ patient_name: '', appointment_date: '', appointment_time: '09:00', description: '' });
+      setForm({ contact_name: '', appointment_date: '', appointment_time: '09:00', description: '' });
       fetchAppointments();
     } catch (err: any) {
       setError(err.message);
@@ -214,7 +235,7 @@ const CalendarPage = () => {
                     <span className="upcoming-month">{format(d, 'MMM', { locale: es })}</span>
                   </div>
                   <div className="upcoming-info">
-                    <strong>{appt.patient_name || 'Paciente'}</strong>
+                    <strong>{appt.contact_name || 'Paciente'}</strong>
                     <span>{format(d, 'HH:mm')} · {appt.description || appt.treatment_type || 'Cita'}</span>
                     {isToday && <span className="today-badge">HOY</span>}
                   </div>
@@ -256,7 +277,7 @@ const CalendarPage = () => {
                   <span className="cell-number">{format(day, 'd')}</span>
                   <div className="cell-events">
                     {dayApps.slice(0, 3).map((app, i) => (
-                      <div key={i} className={`event-dot ${app.source}`} title={app.patient} />
+                      <div key={i} className={`event-dot ${app.source}`} title={app.contact} />
                     ))}
                     {dayApps.length > 3 && <div className="event-dot-more">+{dayApps.length - 3}</div>}
                   </div>
@@ -290,7 +311,7 @@ const CalendarPage = () => {
                       {app.time}
                     </div>
                     <div className="e-info">
-                      <strong>{app.patient}</strong>
+                      <strong>{app.contact}</strong>
                       <span>{app.type}</span>
                       <div className="e-source-badge">
                         {sourceIcon(app.source)}
@@ -303,14 +324,14 @@ const CalendarPage = () => {
                           <ExternalLink size={14} />
                         </a>
                       )}
-                      <button
-                        className="e-action-btn delete"
-                        onClick={() => handleDelete(app.id)}
-                        disabled={deletingId === String(app.id)}
-                        title="Cancelar cita"
-                      >
-                        {deletingId === String(app.id) ? <RefreshCw size={14} className="spinning" /> : <Trash2 size={14} />}
-                      </button>
+                        <button
+                          className="e-action-btn delete"
+                          onClick={() => handleDelete(app.id)}
+                          disabled={cancellingId === String(app.id)}
+                          title="Cancelar cita"
+                        >
+                          {cancellingId === String(app.id) ? <RefreshCw size={14} className="spinning" /> : <Trash2 size={14} />}
+                        </button>
                     </div>
                   </motion.div>
                 ))
@@ -369,8 +390,8 @@ const CalendarPage = () => {
                   <input
                     type="text"
                     placeholder="Ej: Juan García"
-                    value={form.patient_name}
-                    onChange={e => setForm(f => ({ ...f, patient_name: e.target.value }))}
+                    value={form.contact_name}
+                    onChange={e => setForm(f => ({ ...f, contact_name: e.target.value }))}
                     required
                   />
                 </label>
@@ -500,10 +521,10 @@ const CalendarPage = () => {
         .e-info strong { font-size: 0.85rem; }
         .e-info span { font-size: 0.72rem; color: var(--text-muted); }
         .e-source-badge { display: flex; align-items: center; gap: 4px; font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; }
-        .e-actions { display: flex; flex-direction: column; gap: 4px; }
-        .e-action-btn { padding: 0.35rem; border-radius: 8px; color: var(--text-muted); transition: var(--transition); display: flex; }
-        .e-action-btn.link:hover { color: var(--primary); background: var(--glass); }
-        .e-action-btn.delete:hover { color: #ff3b30; background: rgba(255,59,48,0.1); }
+        .e-actions { display: flex; flex-direction: column; gap: 8px; }
+        .e-action-btn { padding: 0.6rem; border-radius: 10px; color: var(--text-muted); transition: var(--transition); display: flex; align-items: center; justify-content: center; background: var(--glass); }
+        .e-action-btn.link:hover { color: var(--primary); background: var(--bg-app); }
+        .e-action-btn.delete:hover { color: #ff3b30; background: rgba(255,59,48,0.15); }
         
         .cal-source-icon.bot { color: var(--primary); }
         .cal-source-icon.google { color: #ea4335; }

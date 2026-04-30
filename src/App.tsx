@@ -7,7 +7,7 @@ import CalendarPage from './pages/Calendar';
 import Landing from './pages/Landing';
 import LoginPage from './pages/Login';
 import WebEditor from './pages/WebEditor';
-import PatientsPage from './pages/Patients';
+import Contacts from './pages/Contacts';
 import ReportsPage from './pages/Reports';
 import ServicesPage from './pages/Services';
 import BusinessPage from './pages/Business';
@@ -41,7 +41,7 @@ const NotificationBell = () => {
       const data = JSON.parse(e.data);
       const newNotif = {
         id: Date.now(),
-        text: `💬 ${data.patient_name || data.phone}: "${data.text}"`,
+        text: `💬 ${data.contact_name || data.phone}: "${data.text}"`,
         time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
       };
       setNotifications(prev => [newNotif, ...prev].slice(0, 10));
@@ -49,7 +49,7 @@ const NotificationBell = () => {
       // Notificación push del navegador
       if (Notification.permission === 'granted') {
         new Notification('📱 Nuevo mensaje WhatsApp', {
-          body: `${data.patient_name || data.phone}: ${data.text}`,
+          body: `${data.contact_name || data.phone}: ${data.text}`,
           icon: '/favicon.ico',
         });
       }
@@ -59,7 +59,7 @@ const NotificationBell = () => {
       const data = JSON.parse(e.data);
       const newNotif = {
         id: Date.now(),
-        text: `📅 Cita agendada: ${data.patient_name} - ${data.service}`,
+        text: `📅 Cita agendada: ${data.contact_name} - ${data.service}`,
         time: new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
       };
       setNotifications(prev => [newNotif, ...prev].slice(0, 10));
@@ -170,7 +170,7 @@ const CRMLayout = ({ children }: { children: React.ReactNode }) => {
 
   const pathLabel: Record<string, string> = {
     '/admin': 'Dashboard', '/admin/conversations': 'Mensajes', '/admin/calendar': 'Agenda',
-    '/admin/patients': 'Pacientes', '/admin/services': 'Servicios', '/admin/reports': 'Reportes',
+    '/admin/contacts': 'Contactos', '/admin/services': 'Servicios', '/admin/reports': 'Reportes',
     '/admin/web-editor': 'Editor Web', '/admin/settings': 'Configuración', '/admin/business': 'Negocio', 
     '/admin/logs': 'Log Sistema', '/admin/seo': 'SEO & Marketing'
   };
@@ -235,7 +235,7 @@ const CRMLayout = ({ children }: { children: React.ReactNode }) => {
           align-items: center;
           flex-shrink: 0;
         }
-        .header-breadcrumbs { display: flex; align-items: center; gap: 1rem; }
+        .header-breadcrumbs { display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 0; margin-right: 1rem; }
         .mobile-hamburger-trigger {
           display: none;
           background: var(--bg-surface);
@@ -254,7 +254,7 @@ const CRMLayout = ({ children }: { children: React.ReactNode }) => {
           .header-breadcrumbs { gap: 0.75rem; }
         }
 
-        .current-path { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+        .current-path { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         .header-logo {
           height: 38px;
@@ -381,7 +381,7 @@ function AppRoutes() {
       <Route path="/admin" element={<CRMLayout><Dashboard /></CRMLayout>} />
       <Route path="/admin/conversations" element={<CRMLayout><Conversations /></CRMLayout>} />
       <Route path="/admin/calendar" element={<CRMLayout><CalendarPage /></CRMLayout>} />
-      <Route path="/admin/patients" element={<CRMLayout><PatientsPage /></CRMLayout>} />
+      <Route path="/admin/contacts" element={<CRMLayout><Contacts /></CRMLayout>} />
       <Route path="/admin/services" element={<CRMLayout><ServicesPage /></CRMLayout>} />
       <Route path="/admin/reports" element={<CRMLayout><ReportsPage /></CRMLayout>} />
       <Route path="/admin/web-editor" element={<CRMLayout><WebEditor /></CRMLayout>} />

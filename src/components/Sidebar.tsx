@@ -21,7 +21,7 @@ const navItems = [
   { icon: <LayoutDashboard size={18} />, label: 'Dashboard', path: '/admin' },
   { icon: <MessageSquare size={18} />, label: 'Mensajes', path: '/admin/conversations' },
   { icon: <Calendar size={18} />, label: 'Agenda', path: '/admin/calendar' },
-  { icon: <Users size={18} />, label: 'Pacientes', path: '/admin/patients' },
+  { icon: <Users size={18} />, label: 'Contactos', path: '/admin/contacts' },
   { icon: <LayoutGrid size={18} />, label: 'Servicios', path: '/admin/services' },
   { icon: <BarChart3 size={18} />, label: 'Reportes', path: '/admin/reports' },
   { icon: <Search size={18} />, label: 'SEO & Marketing', path: '/admin/seo' },
@@ -47,12 +47,18 @@ const Sidebar = ({ mobileOpen, setMobileOpen }: { mobileOpen: boolean, setMobile
       <aside className={`sidebar-glass ${mobileOpen ? 'drawer-open' : ''}`}>
         <div className="sidebar-header">
           {logoSrc ? (
-            <img 
-              src={logoSrc} 
-              alt={brand.clinic_name} 
-              className="sidebar-logo-img" 
-              style={{ filter: isDark && !brand.logo_url ? 'invert(1) brightness(2)' : 'none' }}
-            />
+            <div className="sidebar-logo-wrapper">
+              <img 
+                src={logoSrc} 
+                alt={brand.clinic_name || 'Logo'} 
+                className="sidebar-logo-img" 
+                style={{ 
+                  filter: (isDark && !brand.logo_url && brand.logo_dark_url)
+                    ? 'brightness(0) invert(1)' 
+                    : 'none' 
+                }}
+              />
+            </div>
           ) : (
             <Logo />
           )}

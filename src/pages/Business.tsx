@@ -550,19 +550,36 @@ const BusinessPage = () => {
         .spinning { animation: spin .8s linear infinite; }
 
         @media(max-width: 1024px) {
-          .biz-grid { grid-template-columns: 1fr; gap: 1rem; }
+          .biz-grid { grid-template-columns: 1fr; gap: 1.5rem; }
           .logo-grid { grid-template-columns: 1fr 1fr; }
           .identity-preview { grid-column: 1; }
-          .biz-section { padding: 1.25rem; }
+          .biz-section { padding: 1.5rem; }
         }
         @media(max-width: 768px) {
-          .biz-header { flex-direction: column; align-items: stretch; gap: 1rem; }
-          .save-all-btn { width: 100%; justify-content: center; }
-          .logo-grid { grid-template-columns: 1fr; }
-          .color-presets { gap: 0.5rem; }
-          .page-title { font-size: 1.5rem; }
-          .hours-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-          .hours-times { width: 100%; justify-content: space-between; }
+          .biz-header { flex-direction: column; align-items: stretch; gap: 1rem; text-align: center; }
+          .save-all-btn { width: 100%; justify-content: center; padding: 1rem; font-size: 1rem; }
+          .logo-grid { grid-template-columns: 1fr; gap: 2rem; }
+          .color-presets { gap: 0.75rem; justify-content: center; }
+          .page-title { font-size: 1.75rem; }
+          .hours-row { flex-direction: column; align-items: stretch; gap: 1.25rem; padding: 1.5rem; }
+          .hours-times { width: 100%; justify-content: space-between; margin-top: 0.5rem; gap: 0.75rem; }
+          .hours-times input[type=time] { flex: 1; min-width: 0; text-align: center; padding: 0.75rem; font-size: 1rem; }
+          .hours-toggle { width: 100%; justify-content: space-between; }
+          .pc-header { padding: 1.25rem; }
+          .preview-card { max-width: 100%; margin: 0 auto; }
+          .font-grid { gap: 0.6rem; }
+          .font-pill { font-size: 0.85rem; padding: 0.6rem 1rem; flex: 1; min-width: calc(50% - 0.5rem); text-align: center; }
+          .bot-prompt-textarea { font-size: 0.95rem; min-height: 160px; }
+          .regenerate-btn, .generate-landing-btn { width: 100%; justify-content: center; padding: 0.85rem; }
+        }
+        @media(max-width: 480px) {
+          .color-swatch { width: 45px; height: 45px; }
+          .custom-color-row { gap: 1rem; }
+          .color-input-wrap { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+          .color-picker { width: 100%; height: 50px; }
+          .color-hex-input { width: 100%; text-align: center; font-size: 1.1rem; padding: 0.75rem; }
+          .biz-header { margin-bottom: 1.5rem; }
+          .page-title { font-size: 1.6rem; }
         }
       `}</style>
     </div>

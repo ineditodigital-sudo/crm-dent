@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { Onboarding } from '../components/Onboarding';
 
 const Widget = ({ icon, label, value, trend, color, delay }: any) => (
   <motion.div 
@@ -42,7 +43,7 @@ const Widget = ({ icon, label, value, trend, color, delay }: any) => (
 const Dashboard = () => {
   const [stats, setStats] = React.useState<any>({ totalLeads: 0, botMessages: 0, todayApps: 0, conversion: '0%' });
   const [recentChats, setRecentChats] = React.useState<any[]>([]);
-  const { authFetch } = useAuth();
+  const { authFetch, user } = useAuth();
 
   const API_URL = '';
 
@@ -60,9 +61,10 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-ios animate-ios">
+      <Onboarding />
       <section className="welcome-banner">
-        <h1 className="display-text">Hola, Stephanie</h1>
-        <p className="subtitle">Aquí tienes un vistazo de tu clínica hoy.</p>
+        <h1 className="display-text">Hola, {user || 'Stephanie'}</h1>
+        <p className="subtitle">Aquí tienes un vistazo de tu negocio hoy.</p>
       </section>
 
       <div className="widgets-grid-ios">
@@ -85,7 +87,7 @@ const Dashboard = () => {
         <Widget 
           delay={0.3}
           icon={<Calendar size={20} />} 
-          label="Citas de Hoy" 
+          label="Actividades de Hoy" 
           value={stats.todayApps.toString()} 
           trend="+4.3%" 
           color="green" 

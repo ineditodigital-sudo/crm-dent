@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Send, User, Bot, ShieldAlert, ShieldHalf, MessageSquare, Trash2, ChevronDown, X } from 'lucide-react';
+import { Search, Filter, Send, User, Bot, ShieldAlert, ShieldHalf, MessageSquare, Trash2, ChevronDown, X, StickyNote } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,6 +21,7 @@ const Conversations = () => {
   const [search, setSearch] = useState('');
   const [statusMenu, setStatusMenu] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [isNote, setIsNote] = useState(false);
   const { authFetch } = useAuth();
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
@@ -39,8 +40,8 @@ const Conversations = () => {
       .catch(() => { setChats([]); setLoading(false); });
   }, [authFetch]);
 
-  const fetchMessages = React.useCallback((patientId: number) => {
-    authFetch(`/api/conversations/${patientId}/messages`)
+  const fetchMessages = React.useCallback((contactId: number) => {
+    authFetch(`/api/conversations/${contactId}/messages`)
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         setMessages(data);
@@ -58,7 +59,7 @@ const Conversations = () => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat) return;
     try {
-      await authFetch(`/api/conversations/${selectedChat.id}/send`, { method: 'POST', body: JSON.stringify({ content: newMessage }) });
+      await authFetch(`/api/conversations/${selectedChat.id}/send`, { method: 'POST', body: JSON.stringify({ content: newMessage, isNote }) });
       setNewMessage('');
       fetchMessages(selectedChat.id);
     } catch {}
@@ -66,7 +67,7 @@ const Conversations = () => {
 
   const toggleManual = async (manual: boolean) => {
     if (!selectedChat) return;
-    await authFetch(`/api/patients/${selectedChat.id}/toggle-manual`, { method: 'POST', body: JSON.stringify({ manual_mode: manual }) });
+    await authFetch(`/api/contacts/${selectedChat.id}/toggle-manual`, { method: 'POST', body: JSON.stringify({ manual_mode: manual }) });
     setSelectedChat((c: any) => ({ ...c, manual_mode: manual }));
     fetchChats();
   };
@@ -188,7 +189,7 @@ const Conversations = () => {
                   {selectedChat.name?.charAt(0)?.toUpperCase() || 'P'}
                 </div>
                 <div>
-                  <h3>{selectedChat.name || 'Paciente'}</h3>
+                  <h3>{selectedChat.name || 'Contacto'}</h3>
                   <span className="chat-head-status" style={{ color: selectedChat.manual_mode ? '#ff3b30' : '#30d158' }}>
                     {selectedChat.manual_mode ? <><ShieldAlert size={12} /> Control Humano</> : <><Bot size={12} /> IA Respondiendo</>}
                   </span>
@@ -207,10 +208,10 @@ const Conversations = () => {
             <div className="chat-messages">
               {messages.map((msg, i) => (
                 <div key={i} className={`msg-bubble ${msg.sender}`}>
-                  {msg.sender !== 'patient' && (
+                  {msg.sender !== 'contact' && (
                     <div className="msg-chip">
-                      {msg.sender === 'bot' ? <Bot size={11} /> : <User size={11} />}
-                      {msg.sender === 'bot' ? 'IA' : 'Agente'}
+                      {msg.sender === 'bot' ? <Bot size={11} /> : (msg.sender === 'note' ? <StickyNote size={11} /> : <User size={11} />)}
+                      {msg.sender === 'bot' ? 'IA' : (msg.sender === 'note' ? 'Nota Interna' : 'Agente')}
                     </div>
                   )}
                   <p>{msg.content}</p>
@@ -232,11 +233,14 @@ const Conversations = () => {
                     <ShieldHalf size={14} /> Modo Manual
                     <button className="link-btn" onClick={() => toggleManual(false)}>Dejar al bot</button>
                   </div>
-                  <form className="send-form" onSubmit={handleSend}>
+                  <form className={`send-form ${isNote ? 'is-note' : ''}`} onSubmit={handleSend}>
+                    <button type="button" className={`note-toggle ${isNote ? 'active' : ''}`} onClick={() => setIsNote(!isNote)} title="Nota Interna">
+                      <StickyNote size={16} />
+                    </button>
                     <input
                       value={newMessage}
                       onChange={e => setNewMessage(e.target.value)}
-                      placeholder="Escribe un mensaje..."
+                      placeholder={isNote ? "Escribe una nota interna..." : "Escribe un mensaje..."}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSend(e); } }}
                     />
                     <button type="submit" className="send-btn" disabled={!newMessage.trim()}>
@@ -265,7 +269,7 @@ const Conversations = () => {
               onClick={e => e.stopPropagation()}>
               <Trash2 size={32} color="#ff3b30" />
               <h3>¿Eliminar conversación?</h3>
-              <p>Se eliminarán todos los mensajes y datos de este paciente. Esta acción no se puede deshacer.</p>
+              <p>Se eliminarán todos los mensajes y datos de este contacto. Esta acción no se puede deshacer.</p>
               <div className="confirm-actions">
                 <button className="cancel-btn" onClick={() => setConfirmDelete(null)}>Cancelar</button>
                 <button className="delete-btn" onClick={() => handleDelete(confirmDelete!)}>Eliminar</button>
@@ -330,7 +334,7 @@ const Conversations = () => {
 
         .msg-bubble { max-width: 70%; padding: 0.8rem 1rem; border-radius: 18px; display: flex; flex-direction: column; gap: 0.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
         .msg-bubble.bot, .msg-bubble.agent, .msg-bubble.admin { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 4px; }
-        .msg-bubble.patient { align-self: flex-start; background: var(--bg-surface); color: var(--text-primary); border-bottom-left-radius: 4px; }
+        .msg-bubble.contact { align-self: flex-start; background: var(--bg-surface); color: var(--text-primary); border-bottom-left-radius: 4px; }
         .msg-chip { font-size: 0.62rem; font-weight: 800; display: flex; align-items: center; gap: 0.3rem; opacity: 0.8; margin-bottom: 0.1rem; }
         .msg-bubble p { margin: 0; font-size: 0.9rem; line-height: 1.45; word-break: break-word; }
         .msg-time { font-size: 0.58rem; opacity: 0.55; align-self: flex-end; }
@@ -342,10 +346,18 @@ const Conversations = () => {
         .manual-bar { display: flex; flex-direction: column; gap: 0.65rem; }
         .manual-label { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
         .link-btn { background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; font-size: 0.78rem; margin-left: auto; }
-        .send-form { display: flex; gap: 0.75rem; align-items: center; }
+        .send-form { display: flex; gap: 0.75rem; align-items: center; transition: 0.3s; }
+        .send-form.is-note { background: rgba(255, 159, 10, 0.1); padding: 0.5rem; border-radius: 30px; border: 1px dashed #ff9f0a; }
         .send-form input { flex: 1; background: var(--bg-app); border: none; padding: 0.75rem 1.25rem; border-radius: 24px; font-size: 0.9rem; color: var(--text-primary); outline: none; }
+        .send-form.is-note input { background: transparent; }
+        .note-toggle { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: var(--text-muted); cursor: pointer; border-radius: 50%; transition: 0.2s; }
+        .note-toggle.active { color: #ff9f0a; background: rgba(255, 159, 10, 0.2); }
         .send-btn { width: 42px; height: 42px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transform: rotate(-20deg); box-shadow: 0 4px 12px var(--primary-light); transition: var(--transition); }
         .send-btn:disabled { opacity: 0.3; transform: none; cursor: not-allowed; }
+        .send-form.is-note .send-btn { background: #ff9f0a; box-shadow: 0 4px 12px rgba(255, 159, 10, 0.4); }
+
+        .msg-bubble.note { align-self: center; background: rgba(255, 159, 10, 0.1); border: 1px dashed #ff9f0a; color: var(--text-primary); max-width: 90%; }
+        .msg-bubble.note .msg-chip { color: #ff9f0a; }
 
         .chat-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; opacity: 0.4; color: var(--text-muted); text-align: center; }
 

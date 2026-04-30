@@ -12,10 +12,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { useTheme } from '../context/ThemeContext';
 
 const Landing = ({ previewSettings }: { previewSettings?: any }) => {
+  const { isDark } = useTheme();
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(isDark);
   const [settings, setSettings] = useState<any>(previewSettings || {
     brand: { clinic_name: 'Dra. Stephanie Ortega', giro: 'Clínica Dental Especializada', logo_url: '' },
     theme: { primary: '#007aff', accent: '#ff2d55', font: 'Inter' },
@@ -29,10 +31,10 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
   });
 
   useEffect(() => {
-    setIsDarkMode(document.documentElement.classList.contains('dark'));
-    const observer = new MutationObserver(() => setIsDarkMode(document.documentElement.classList.contains('dark')));
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    setIsDarkMode(isDark);
+  }, [isDark]);
 
+  useEffect(() => {
     if (previewSettings) {
       setSettings(previewSettings);
     } else {
@@ -103,7 +105,6 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
         })
         .catch(err => console.error("Error fetching landing settings", err));
     }
-    return () => observer.disconnect();
   }, [previewSettings]);
 
   const faqs = [];
@@ -114,16 +115,15 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
   }
 
   const currentLogo = isDarkMode 
-    ? (settings.brand?.logo_dark_url || settings.brand?.logo_url) 
-    : (settings.brand?.logo_url || settings.brand?.logo_dark_url);
+    ? (settings.brand?.logo_url || settings.brand?.logo_dark_url) 
+    : (settings.brand?.logo_dark_url || settings.brand?.logo_url);
 
   const logoStyle: any = { 
     height: '44px', 
     width: 'auto', 
     objectFit: 'contain',
-    // Filtro inteligente mejorado
-    filter: isDarkMode 
-      ? (!settings.brand?.logo_dark_url || settings.brand?.logo_dark_url === settings.brand?.logo_url ? 'brightness(0) invert(1)' : 'none')
+    filter: (isDarkMode && !settings.brand?.logo_url && settings.brand?.logo_dark_url)
+      ? 'brightness(0) invert(1)' 
       : 'none'
   };
 
@@ -232,29 +232,105 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
         )}
       </AnimatePresence>
 
-      {/* Hero Section */}
-      <section className="hero-ios ios-container" style={{ paddingTop: previewSettings ? '120px' : '180px' }}>
-        <div className="hero-text-wrap">
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="hero-pill glass-card">
-            <Sparkles size={14} style={{ color: 'var(--primary)' }} />
-            <span>{settings.brand?.giro || 'Servicios Profesionales'}</span>
-          </motion.div>
-          <h1 className="display-text animate-ios">{settings.hero?.title}</h1>
-          <p className="hero-sub animate-ios" style={{ animationDelay: '0.2s' }}>{settings.hero?.subtitle}</p>
-          <div className="hero-actions-ios animate-ios" style={{ animationDelay: '0.4s' }}>
-            <a href={waLink} target="_blank" rel="noreferrer" className="btn-ios-large" style={{ textDecoration: 'none' }}>
-              Agendar Cita <ArrowRight size={18} />
-            </a>
+      {/* Desktop Hero Section */}
+      <div className="desktop-hero-container">
+        <section className="hero-ios ios-container" style={{ paddingTop: previewSettings ? '120px' : '180px' }}>
+          <div className="hero-text-wrap">
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="hero-pill glass-card">
+              <Sparkles size={14} style={{ color: 'var(--primary)' }} />
+              <span>{settings.brand?.giro || 'Servicios Profesionales'}</span>
+            </motion.div>
+            <h1 className="display-text animate-ios">{settings.hero?.title}</h1>
+            <p className="hero-sub animate-ios" style={{ animationDelay: '0.2s' }}>{settings.hero?.subtitle}</p>
+            <div className="hero-actions-ios animate-ios" style={{ animationDelay: '0.4s' }}>
+              <a href={waLink} target="_blank" rel="noreferrer" className="btn-ios-large" style={{ textDecoration: 'none' }}>
+                Agendar Cita <ArrowRight size={18} />
+              </a>
+            </div>
           </div>
-        </div>
-        <div className="hero-visual-ios">
-           <div className="visual-stack">
-              <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="visual-card main-v glass-card">
-                <img src={settings.images?.hero || 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=2070&auto=format&fit=crop'} alt="Hero" />
-              </motion.div>
-           </div>
-        </div>
-      </section>
+          <div className="hero-visual-ios">
+             <div className="visual-stack">
+                <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }} className="visual-card main-v glass-card">
+                  <img src={settings.images?.hero || 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=2070&auto=format&fit=crop'} alt="Hero" />
+                </motion.div>
+             </div>
+          </div>
+        </section>
+      </div>
+
+      {/* Mobile Hero Section */}
+      <div className="mobile-hero-container">
+        <section className="hero-mobile">
+          <div className="hero-mobile-visual">
+            <img src={settings.images?.hero || 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=2070&auto=format&fit=crop'} alt="Hero Mobile" />
+            <div className="hero-mobile-gradient"></div>
+            
+            {/* Floating Trust Elements */}
+            <motion.div 
+              initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.5 }}
+              className="mobile-floating-card glass-card"
+              style={{ bottom: '20%', right: '5%' }}
+            >
+              <div className="m-f-icon"><Award size={16} /></div>
+              <div className="m-f-text">
+                <strong>Servicio Premium</strong>
+                <span>Calidad Garantizada</span>
+              </div>
+            </motion.div>
+
+            <motion.div 
+              initial={{ x: -20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: 0.7 }}
+              className="mobile-floating-card glass-card"
+              style={{ bottom: '35%', left: '5%' }}
+            >
+              <div className="m-f-icon" style={{ background: 'rgba(37, 211, 102, 0.2)', color: '#25D366' }}><MessageCircle size={16} /></div>
+              <div className="m-f-text">
+                <strong>Atención 24/7</strong>
+                <span>Vía WhatsApp</span>
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="hero-mobile-content ios-container">
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="hero-pill"
+            >
+              <Sparkles size={14} />
+              <span>{settings.brand?.giro || 'Servicios Profesionales'}</span>
+            </motion.div>
+            
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="display-text"
+            >
+              {settings.hero?.title}
+            </motion.h1>
+
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+              className="hero-sub"
+            >
+              {settings.hero?.subtitle}
+            </motion.p>
+
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}
+              className="hero-actions-ios"
+              style={{ width: '100%' }}
+            >
+              <a href={waLink} target="_blank" rel="noreferrer" className="btn-ios-large" style={{ textDecoration: 'none', width: '100%', justifyContent: 'center' }}>
+                Agendar Cita <ArrowRight size={18} />
+              </a>
+              <div className="trust-badges-mobile">
+                <span>⭐ 4.9/5 valoración</span>
+                <span className="dot">•</span>
+                <span>+500 clientes felices</span>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      </div>
 
       {/* Profile Section (Doctora) */}
       {settings.professional?.show !== 'no' && (
@@ -483,51 +559,51 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
           background: var(--primary-light);
           border: 1px solid var(--primary);
         }
-        .display-text { font-size: 4.5rem; font-weight: 900; line-height: 1.1; letter-spacing: -0.04em; }
-        .hero-sub { font-size: 1.25rem; color: var(--text-muted); margin: 2rem 0 3rem; line-height: 1.6; max-width: 600px; }
+        .display-text { font-size: 4.2rem; font-weight: 900; line-height: 1.05; letter-spacing: -0.04em; }
+        .hero-sub { font-size: 1.15rem; color: var(--text-muted); margin: 1.5rem 0 2.5rem; line-height: 1.5; max-width: 600px; }
         
         .btn-ios-pill { 
           background: var(--primary); 
           color: white; 
-          padding: 0.75rem 1.5rem; 
+          padding: 0.7rem 1.4rem; 
           border-radius: 100px; 
           font-weight: 700; 
-          font-size: 0.9rem; 
+          font-size: 0.85rem; 
           display: inline-flex; 
           align-items: center; 
-          gap: 0.6rem; 
+          gap: 0.5rem; 
           border: none; 
           text-decoration: none;
           transition: 0.3s;
           box-shadow: 0 4px 12px var(--primary-glow);
         }
         .btn-ios-pill:hover { transform: translateY(-2px); box-shadow: 0 8px 20px var(--primary-glow); }
-        .btn-ios-pill.large { padding: 1.1rem 2.5rem; font-size: 1.1rem; }
+        .btn-ios-pill.large { padding: 1rem 2.2rem; font-size: 1.05rem; }
 
-        .main-v { border-radius: 48px; overflow: hidden; aspect-ratio: 4/3; box-shadow: 0 30px 60px rgba(0,0,0,0.1); }
+        .main-v { border-radius: 40px; overflow: hidden; aspect-ratio: 4/3; box-shadow: 0 30px 60px rgba(0,0,0,0.1); }
         .main-v img { width: 100%; height: 100%; object-fit: cover; }
 
-        .profile-section { padding: 120px 0; }
-        .profile-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 5rem; align-items: center; }
-        .profile-photo { padding: 1rem; border-radius: 40px; position: relative; }
-        .doc-img { width: 100%; border-radius: 32px; }
-        .doc-badge { position: absolute; bottom: -10px; right: -10px; padding: 1.25rem 2rem; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 0.75rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .profile-section { padding: 100px 0; }
+        .profile-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 4rem; align-items: center; }
+        .profile-photo { padding: 0.8rem; border-radius: 32px; position: relative; }
+        .doc-img { width: 100%; border-radius: 24px; }
+        .doc-badge { position: absolute; bottom: -8px; right: -8px; padding: 1rem 1.75rem; border-radius: 18px; font-weight: 700; display: flex; align-items: center; gap: 0.6rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
 
-        .services-ios { padding: 120px 0; }
-        .section-head-ios { text-align: center; margin-bottom: 5rem; }
-        .display-text-sm { font-size: 3.5rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; }
+        .services-ios { padding: 100px 0; }
+        .section-head-ios { text-align: center; margin-bottom: 4rem; }
+        .display-text-sm { font-size: 3.2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
         
         .bento-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
           grid-auto-rows: 1fr;
-          gap: 1.5rem;
+          gap: 1.25rem;
         }
         .bento-item {
           display: flex;
           flex-direction: column;
-          padding: 2.5rem;
-          border-radius: 32px;
+          padding: 2.25rem;
+          border-radius: 28px;
           height: 100%;
           transition: 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
@@ -544,13 +620,13 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
           overflow: hidden;
         }
         .bento-image-wrap {
-          height: 180px;
+          height: 170px;
           width: 100%;
           overflow: hidden;
           position: relative;
         }
         .bento-featured .bento-image-wrap {
-          height: 220px;
+          height: 200px;
         }
         .bento-image-wrap img {
           width: 100%;
@@ -562,65 +638,46 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
           transform: scale(1.05);
         }
         .bento-header-info {
-          padding: 2.5rem;
+          padding: 2.25rem;
           display: flex;
           flex-direction: column;
           flex: 1;
         }
+        .desktop-hero-container { display: block; }
+        .mobile-hero-container { display: none; }
         
         @media (max-width: 1024px) {
           .bento-grid { grid-template-columns: repeat(2, 1fr); }
           .bento-featured, .bento-wide { grid-column: span 2; }
+          .display-text { font-size: 3.5rem; }
+          .display-text-sm { font-size: 2.8rem; }
         }
         @media (max-width: 768px) {
-          .bento-grid { grid-template-columns: 1fr; }
-          .bento-featured, .bento-wide { grid-column: span 1; }
-        }
+          .desktop-hero-container { display: none; }
+          .mobile-hero-container { display: block; }
+          .hero-mobile { position: relative; padding-top: 60px; padding-bottom: 2.5rem; }
+          .hero-mobile-visual { position: relative; width: 100%; height: 50vh; max-height: 450px; border-bottom-left-radius: 50px; border-bottom-right-radius: 50px; overflow: hidden; box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+          .hero-mobile-visual img { width: 100%; height: 100%; object-fit: cover; }
+          .hero-mobile-gradient { position: absolute; bottom: 0; left: 0; width: 100%; height: 75%; background: linear-gradient(to top, var(--bg-app), transparent); }
+          
+          .mobile-floating-card { position: absolute; display: flex; align-items: center; gap: 8px; padding: 0.6rem 0.9rem; border-radius: 16px; z-index: 5; backdrop-filter: blur(12px); border: 1px solid var(--glass-border); background: rgba(var(--bg-app-rgb), 0.5); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+          .m-f-icon { width: 28px; height: 28px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; }
+          .m-f-text { display: flex; flex-direction: column; line-height: 1.1; }
+          .m-f-text strong { font-size: 0.7rem; font-weight: 800; color: var(--text-primary); }
+          .m-f-text span { font-size: 0.6rem; color: var(--text-muted); }
 
-        .service-widget-premium:hover { transform: translateY(-12px); box-shadow: 0 30px 60px rgba(0,0,0,0.08); }
-        .s-icon-ios { width: 56px; height: 56px; background: var(--primary-light); color: var(--primary); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+          .hero-mobile-content { position: relative; z-index: 10; margin-top: -4.5rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1rem; padding-bottom: 1.5rem; }
+          .hero-mobile-content .hero-pill { border-radius: 100px; background: var(--primary-light); border: 1px solid var(--primary); color: var(--primary); padding: 0.4rem 0.9rem; font-size: 0.7rem; font-weight: 700; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 6px; }
+          .hero-mobile-content .display-text { font-size: 2.25rem; margin: 0; line-height: 1.1; letter-spacing: -0.02em; }
+          .hero-mobile-content .hero-sub { margin-top: 0; margin-bottom: 0.75rem; font-size: 0.95rem; color: var(--text-muted); padding: 0 0.5rem; line-height: 1.5; }
+          
+          .trust-badges-mobile { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 1rem; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+          .trust-badges-mobile .dot { color: var(--primary); font-size: 1rem; }
 
-        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem; }
-        .gallery-item { border-radius: 28px; overflow: hidden; position: relative; aspect-ratio: 1; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.6s; }
-        .gallery-item:hover img { scale: 1.1; }
-        .gallery-overlay { position: absolute; inset: 0; background: rgba(var(--primary-rgb), 0.2); backdrop-filter: blur(4px); opacity: 0; display: flex; align-items: center; justify-content: center; color: white; transition: 0.3s; }
-        .gallery-item:hover .gallery-overlay { opacity: 1; }
-
-        .accordion-list { max-width: 900px; margin: 4rem auto; display: flex; flex-direction: column; gap: 1.5rem; }
-        .accordion-item { padding: 1.75rem 2rem; border-radius: 24px; cursor: pointer; transition: 0.3s; border: 1px solid var(--glass-border); }
-        .accordion-item:hover { background: rgba(var(--bg-app-rgb), 0.5); }
-        .acc-head { display: flex; justify-content: space-between; align-items: center; }
-        .acc-head h4 { font-size: 1.15rem; font-weight: 700; }
-        .acc-icon { transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); color: var(--primary); }
-        .accordion-item.open { border-color: var(--primary); box-shadow: 0 10px 30px var(--primary-glow); }
-        .accordion-item.open .acc-icon { transform: rotate(180deg); }
-        .acc-body { padding-top: 1.25rem; color: var(--text-muted); line-height: 1.6; }
-
-        .location-grid { display: grid; grid-template-columns: 1fr 1.5fr; min-height: 500px; border-radius: 40px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.1); border: 1px solid var(--glass-border); }
-        .loc-info { padding: 4rem; display: flex; flex-direction: column; justify-content: center; }
-        .loc-map { background: #eee; }
-
-        .footer-ios { padding: 6rem 0 3rem; border-top: 1px solid var(--glass-border); }
-        .footer-main { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 4rem; }
-        .f-col { display: flex; flex-direction: column; gap: 1rem; }
-        .f-col a { text-decoration: none; color: var(--text-muted); }
-        .footer-bottom-ios { margin-top: 4rem; text-align: center; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--glass-border); padding-top: 2rem; }
-
-        .wa-ios-widget { position: fixed; bottom: 30px; right: 30px; z-index: 1000; display: flex; flex-direction: column; align-items: flex-end; gap: 1rem; }
-        .wa-floating-bubble { padding: 1rem 1.5rem; border-radius: 20px; font-weight: 700; border-bottom-right-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .wa-ios-btn { width: 64px; height: 64px; background: #25d366; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 15px 35px rgba(37,211,102,0.5); transition: 0.3s; }
-        .wa-ios-btn:hover { transform: scale(1.1) rotate(5deg); }
-        .wa-img-white { width: 34px; height: 34px; filter: brightness(0) invert(1); }
-
-        .ios-label { 
-          display: block; 
-          text-transform: uppercase; 
-          letter-spacing: 0.15em; 
-          font-size: 0.75rem; 
-          font-weight: 800; 
-          color: var(--primary); 
-          margin-bottom: 1rem; 
+          .bento-grid { grid-template-columns: 1fr; gap: 1rem; }
+          .bento-item { padding: 1.5rem; min-height: auto; }
+          .bento-item h3 { font-size: 1.5rem; margin-bottom: 0.75rem; }
+          .display-text { font-size: 2.25rem; }
         }
 
         .btn-ios-large { 
@@ -659,6 +716,8 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
         @media (max-width: 768px) {
           .nav-links-ios { display: none; }
           .nav-actions-mobile { display: flex; align-items: center; gap: 0.75rem; }
+          .logo-ios { flex: 1; min-width: 0; }
+          .logo-ios img { max-width: 180px; height: 36px !important; object-fit: contain; }
           .display-text { font-size: 2.75rem; letter-spacing: -0.03em; }
           .display-text-sm { font-size: 2.25rem; }
           .ios-container { padding: 0 1.25rem; }

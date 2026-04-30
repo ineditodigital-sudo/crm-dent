@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, MessageSquare, RefreshCw, Search, ChevronRight, Bot, User, Trash2, CalendarCheck, Star } from 'lucide-react';
+import { Users, MessageSquare, RefreshCw, Search, ChevronRight, Bot, User, Trash2, CalendarCheck, Star, LayoutGrid, List } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -37,65 +37,66 @@ const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-const PatientsPage = () => {
-  const [patients, setPatients] = useState<any[]>([]);
+const contactsPage = () => {
+  const [contacts, setcontacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<any | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
-  const [patientAppts, setPatientAppts] = useState<any[]>([]);
+  const [contactAppts, setcontactAppts] = useState<any[]>([]);
   const [loadingAppts, setLoadingAppts] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
 
   const load = useCallback(async () => {
     setLoading(true);
     setFetchError('');
     try {
-      const r = await fetch('/api/patients', { headers: { Authorization: `Bearer ${tok()}` } });
+      const r = await fetch('/api/contacts', { headers: { Authorization: `Bearer ${tok()}` } });
       if (!r.ok) throw new Error(`Error ${r.status}: ${r.statusText}`);
       const data = await r.json();
       if (!Array.isArray(data)) throw new Error('Respuesta inesperada del servidor');
-      setPatients(data);
+      setcontacts(data);
     } catch (err: any) {
       setFetchError(err.message || 'No se pudo conectar al servidor');
-      setPatients([]);
+      setcontacts([]);
     }
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
-  const loadPatientAppts = useCallback(async (patientId: number) => {
+  const loadcontactAppts = useCallback(async (contactId: number) => {
     setLoadingAppts(true);
     try {
       const r = await fetch('/api/appointments', { headers: { Authorization: `Bearer ${tok()}` } });
       if (r.ok) {
         const all = await r.json();
-        setPatientAppts(all.filter((a: any) => a.patient_id === patientId));
+        setcontactAppts(all.filter((a: any) => a.contact_id === contactId));
       }
-    } catch { setPatientAppts([]); }
+    } catch { setcontactAppts([]); }
     setLoadingAppts(false);
   }, []);
 
-  const filtered = patients.filter(p =>
+  const filtered = contacts.filter(p =>
     (p.name || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.phone || '').includes(search) ||
     (p.email || '').toLowerCase().includes(search.toLowerCase()) ||
     (p.service_interested || '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const savePatient = async () => {
+  const savecontact = async () => {
     if (!selected) return;
     setSaving(true);
-    await fetch(`/api/patients/${selected.id}`, {
+    await fetch(`/api/contacts/${selected.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
       body: JSON.stringify(editForm)
     });
     // Cambio de estado via ruta dedicada
     if (editForm.status !== selected.status) {
-      await fetch(`/api/patients/${selected.id}/status`, {
+      await fetch(`/api/contacts/${selected.id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
         body: JSON.stringify({ status: editForm.status })
@@ -106,12 +107,12 @@ const PatientsPage = () => {
     setSelected({ ...selected, ...editForm });
   };
   
-  const deletePatient = async () => {
+  const deletecontact = async () => {
     if (!selected) return;
     if (!confirm('¿ESTÁS SEGURO? Esta acción eliminará permanentemente al paciente, todo su historial de mensajes y sus citas. Esta acción no se puede deshacer.')) return;
     setSaving(true);
     try {
-      const r = await fetch(`/api/patients/${selected.id}`, {
+      const r = await fetch(`/api/contacts/${selected.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${tok()}` }
       });
@@ -127,16 +128,20 @@ const PatientsPage = () => {
   };
 
   return (
-    <div className="patients-page animate-ios">
-      <div className="patients-header">
+    <div className="contacts-page animate-ios">
+      <div className="contacts-header">
         <div>
-          <h1 className="page-title">Pacientes</h1>
-          <p className="page-sub">{patients.length} contactos registrados</p>
+          <h1 className="page-title">Contactos / Leads</h1>
+          <p className="page-sub">{contacts.length} contactos registrados en tu embudo</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="view-toggle glass-card">
+            <button className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')}><List size={16} /> Lista</button>
+            <button className={viewMode === 'kanban' ? 'active' : ''} onClick={() => setViewMode('kanban')}><LayoutGrid size={16} /> Kanban</button>
+          </div>
           <button className="btn-ghost" title="Fusiona contactos duplicados" onClick={async () => {
             if(!confirm('¿Buscar y fusionar contactos duplicados (mismo número)?')) return;
-            const r = await fetch('/api/patients/merge-duplicates', { method: 'POST', headers: { Authorization: `Bearer ${tok()}` } });
+            const r = await fetch('/api/contacts/merge-duplicates', { method: 'POST', headers: { Authorization: `Bearer ${tok()}` } });
             const data = await r.json();
             alert(data.message || 'Proceso completado.');
             load();
@@ -145,14 +150,78 @@ const PatientsPage = () => {
         </div>
       </div>
 
-      <div className="patients-layout">
-        {/* LISTA */}
-        <div className={`patients-list glass-card ${selected ? 'hide-mobile' : ''}`}>
+      <div className="contacts-layout">
+        {/* VISTA KANBAN */}
+        {viewMode === 'kanban' && (
+          <div className="kanban-board">
+            {['lead', 'nuevo', 'prospecto', 'frecuente', 'especial'].map(col => {
+              const colcontacts = filtered.filter(p => p.status === col || (p.status?.toLowerCase() === col));
+              const cfg = getStatusConfig(col);
+              return (
+                <div 
+                  key={col} 
+                  className="kanban-column glass-card"
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={async (e) => {
+                    e.preventDefault();
+                    const idStr = e.dataTransfer.getData('contactId');
+                    if (!idStr) return;
+                    const id = parseInt(idStr);
+                    // Actualización optimista
+                    setcontacts(prev => prev.map(p => p.id === id ? { ...p, status: col } : p));
+                    // API Call
+                    await fetch(`/api/contacts/${id}/status`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
+                      body: JSON.stringify({ status: col })
+                    });
+                  }}
+                >
+                  <div className="k-col-header" style={{ borderBottom: `2px solid ${cfg.color}` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>{cfg.emoji}</span>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem' }}>{cfg.label}</h4>
+                    </div>
+                    <span className="k-count">{colcontacts.length}</span>
+                  </div>
+                  <div className="k-col-body">
+                    {colcontacts.map(p => (
+                      <div 
+                        key={p.id} 
+                        className="k-card glass-card" 
+                        draggable 
+                        onDragStart={(e) => e.dataTransfer.setData('contactId', p.id.toString())}
+                        onClick={() => {
+                          setSelected(p);
+                          setEditForm({ name: p.name, email: p.email, service_interested: p.service_interested, status: p.status });
+                          loadcontactAppts(p.id);
+                          setViewMode('list'); // switch to list to view details
+                        }}
+                      >
+                        <div className="k-card-title">{p.name || 'Sin nombre'}</div>
+                        <div className="k-card-sub">{p.phone}</div>
+                        <div className="k-card-footer">
+                          {p.message_count ? <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}><MessageSquare size={10} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '2px' }}/> {p.message_count}</span> : <span />}
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{format(new Date(p.last_interaction || new Date()), "d MMM", { locale: es })}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* LISTA Y DETALLE */}
+        {viewMode === 'list' && (
+          <>
+            <div className={`contacts-list glass-card ${selected ? 'hide-mobile' : ''}`}>
           <div className="search-bar">
             <Search size={16} />
             <input placeholder="Buscar por nombre, teléfono o servicio..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <div className="patient-items">
+          <div className="contact-items">
             {loading ? (
               <div className="loading-state"><RefreshCw size={20} className="spinning" /> Cargando...</div>
             ) : fetchError ? (
@@ -172,24 +241,24 @@ const PatientsPage = () => {
                 return (
                   <motion.div
                     key={p.id}
-                    className={`patient-item ${selected?.id === p.id ? 'active' : ''}`}
+                    className={`contact-item ${selected?.id === p.id ? 'active' : ''}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: i * 0.03 }}
                     onClick={() => {
                       setSelected(p);
                       setEditForm({ name: p.name, email: p.email, service_interested: p.service_interested, status: p.status });
-                      loadPatientAppts(p.id);
+                      loadcontactAppts(p.id);
                     }}
                   >
-                    <div className="patient-avatar" style={{ background: cfg.color }}>
+                    <div className="contact-avatar" style={{ background: cfg.color }}>
                       {p.status === 'especial' ? <Star size={16} color="white" /> : p.source === 'bot' ? <Bot size={16} color="white" /> : <User size={16} color="white" />}
                     </div>
-                    <div className="patient-info">
+                    <div className="contact-info">
                       <strong>{p.name || 'Nuevo paciente'}</strong>
                       <span>{p.phone}</span>
                     </div>
-                    <div className="patient-meta">
+                    <div className="contact-meta">
                       <StatusBadge status={p.status} />
                       <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
                     </div>
@@ -201,7 +270,7 @@ const PatientsPage = () => {
         </div>
 
         {/* DETALLE */}
-        <div className={`patient-detail glass-card ${!selected ? 'hide-mobile' : ''}`}>
+        <div className={`contact-detail glass-card ${!selected ? 'hide-mobile' : ''}`}>
           {!selected ? (
             <div className="no-selection"><Users size={48} style={{ opacity: 0.2 }} /><p>Selecciona un paciente para ver sus datos</p></div>
           ) : (
@@ -237,7 +306,7 @@ const PatientsPage = () => {
                 </label>
               </div>
 
-              <button className="btn-primary save-btn" onClick={savePatient} disabled={saving}>
+              <button className="btn-primary save-btn" onClick={savecontact} disabled={saving}>
                 {saving ? <RefreshCw size={16} className="spinning" /> : null} {saving ? 'Guardando...' : 'Guardar cambios'}
               </button>
 
@@ -246,9 +315,9 @@ const PatientsPage = () => {
                 <h4><CalendarCheck size={14} /> Historial de Citas</h4>
                 {loadingAppts ? (
                   <div className="loading-state" style={{ padding: '1rem' }}><RefreshCw size={16} className="spinning" /></div>
-                ) : patientAppts.length === 0 ? (
+                ) : contactAppts.length === 0 ? (
                   <p className="no-appts">Sin citas registradas</p>
-                ) : patientAppts.map((a: any) => (
+                ) : contactAppts.map((a: any) => (
                   <div key={a.id} className="appt-item" style={{ borderLeftColor: apptStatusColor(a.status) }}>
                     <strong>{a.description || a.treatment_type || 'Cita'}</strong>
                     <span>{a.appointment_date ? format(new Date(a.appointment_date), "d 'de' MMMM yyyy, HH:mm", { locale: es }) : 'Sin fecha'}</span>
@@ -257,7 +326,7 @@ const PatientsPage = () => {
                 ))}
               </div>
 
-              <button className="btn-ghost delete-patient-btn" onClick={deletePatient} disabled={saving} style={{ marginTop: '0.5rem', color: '#ff3b30', border: '1px solid rgba(255,59,48,0.2)', width: '100%', justifyContent: 'center' }}>
+              <button className="btn-ghost delete-contact-btn" onClick={deletecontact} disabled={saving} style={{ marginTop: '0.5rem', color: '#ff3b30', border: '1px solid rgba(255,59,48,0.2)', width: '100%', justifyContent: 'center' }}>
                 <Trash2 size={16} /> Eliminar Paciente Permanentemente
               </button>
 
@@ -267,26 +336,28 @@ const PatientsPage = () => {
             </div>
           )}
         </div>
+          </>
+        )}
       </div>
 
       <style>{`
-        .patients-page{display:flex;flex-direction:column;gap:2rem}
-        .patients-header{display:flex;justify-content:space-between;align-items:flex-start}
+        .contacts-page{display:flex;flex-direction:column;gap:2rem}
+        .contacts-header{display:flex;justify-content:space-between;align-items:flex-start}
         .page-title{font-size:2rem;font-weight:800}
         .page-sub{color:var(--text-muted);font-size:.9rem;margin-top:.25rem}
-        .patients-layout{display:grid;grid-template-columns:400px 1fr;gap:1.5rem;height:calc(100vh - 200px)}
-        .patients-list{border-radius:20px;display:flex;flex-direction:column;overflow:hidden}
+        .contacts-layout{display:grid;grid-template-columns:400px 1fr;gap:1.5rem;height:calc(100vh - 200px)}
+        .contacts-list{border-radius:20px;display:flex;flex-direction:column;overflow:hidden}
         .search-bar{display:flex;align-items:center;gap:.75rem;padding:1rem 1.25rem;border-bottom:1px solid var(--glass-border)}
         .search-bar input{flex:1;border:none;background:none;font-size:.9rem;color:var(--text-primary)}
-        .patient-items{flex:1;overflow-y:auto}
-        .patient-item{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;cursor:pointer;transition:var(--transition);border-bottom:1px solid var(--glass-border)}
-        .patient-item:hover,.patient-item.active{background:var(--glass)}
-        .patient-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-        .patient-info{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
-        .patient-info strong{font-size:.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .patient-info span{font-size:.78rem;color:var(--text-muted)}
-        .patient-meta{display:flex;align-items:center;gap:.5rem;flex-shrink:0}
-        .patient-detail{border-radius:20px;padding:2rem;overflow-y:auto}
+        .contact-items{flex:1;overflow-y:auto}
+        .contact-item{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;cursor:pointer;transition:var(--transition);border-bottom:1px solid var(--glass-border)}
+        .contact-item:hover,.contact-item.active{background:var(--glass)}
+        .contact-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .contact-info{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+        .contact-info strong{font-size:.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .contact-info span{font-size:.78rem;color:var(--text-muted)}
+        .contact-meta{display:flex;align-items:center;gap:.5rem;flex-shrink:0}
+        .contact-detail{border-radius:20px;padding:2rem;overflow-y:auto}
         .no-selection{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:1rem;color:var(--text-muted)}
         .detail-content{display:flex;flex-direction:column;align-items:center;gap:1.25rem}
         .detail-avatar{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center}
@@ -302,7 +373,24 @@ const PatientsPage = () => {
         .loading-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;padding:3rem;color:var(--text-muted);font-size:.9rem}
         .btn-primary{background:var(--primary);color:white;padding:.75rem 1.5rem;border-radius:var(--radius-full);font-weight:700;display:flex;align-items:center;gap:.5rem;font-size:.9rem;border:none;cursor:pointer}
         .btn-ghost{padding:.65rem 1.25rem;border-radius:var(--radius-full);font-weight:600;color:var(--text-secondary);background:var(--glass);display:flex;align-items:center;gap:.5rem;font-size:.85rem;border:none;cursor:pointer}
+        .view-toggle { display: flex; padding: 0.25rem; border-radius: 12px; }
+        .view-toggle button { display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 1rem; border: none; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: 8px; font-weight: 600; font-size: 0.85rem; transition: 0.3s; }
+        .view-toggle button.active { background: var(--bg-app); color: var(--text-primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .mobile-back-btn{display:none;align-self:flex-start}
+
+        /* Kanban Styles */
+        .kanban-board { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; height: 100%; grid-column: 1 / -1; }
+        .kanban-column { min-width: 280px; width: 280px; display: flex; flex-direction: column; background: rgba(var(--bg-app-rgb), 0.3); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 16px; }
+        .k-col-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 0.75rem; margin-bottom: 1rem; }
+        .k-count { background: var(--glass); padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+        .k-col-body { display: flex; flex-direction: column; gap: 0.75rem; flex: 1; overflow-y: auto; }
+        .k-card { padding: 1rem; cursor: grab; background: var(--bg-surface); border: 1px solid var(--glass-border); display: flex; flex-direction: column; gap: 0.4rem; transition: 0.2s; }
+        .k-card:active { cursor: grabbing; transform: scale(0.98); }
+        .k-card:hover { border-color: var(--primary); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .k-card-title { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+        .k-card-sub { font-size: 0.8rem; color: var(--text-muted); }
+        .k-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 0.25rem; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; }
+
         /* Historial citas */
         .appt-history{width:100%;display:flex;flex-direction:column;gap:.5rem;margin-top:.25rem}
         .appt-history h4{font-size:.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:.4rem;margin-bottom:.25rem}
@@ -314,11 +402,11 @@ const PatientsPage = () => {
         @keyframes spin{to{transform:rotate(360deg)}}
         .spinning{animation:spin .8s linear infinite}
         @media(max-width:900px){
-          .patients-layout{grid-template-columns:1fr;height:auto; min-height: calc(100vh - 200px);}
-          .patient-detail{min-height:calc(100vh - 250px); padding: 1.25rem;}
+          .contacts-layout{grid-template-columns:1fr;height:auto; min-height: calc(100vh - 200px);}
+          .contact-detail{min-height:calc(100vh - 250px); padding: 1.25rem;}
           .hide-mobile{display:none !important}
           .mobile-back-btn{display:flex; margin-bottom: 1rem;}
-          .patients-header{flex-direction:column;gap:1rem; align-items: stretch;}
+          .contacts-header{flex-direction:column;gap:1rem; align-items: stretch;}
           .btn-ghost { justify-content: center; width: 100%; }
           .page-title { font-size: 1.5rem; }
           .detail-name { font-size: 1.25rem; }
@@ -327,4 +415,4 @@ const PatientsPage = () => {
     </div>
   );
 };
-export default PatientsPage;
+export default contactsPage;

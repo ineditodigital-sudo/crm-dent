@@ -46,21 +46,23 @@ const SettingsPage = () => {
       </div>
 
       <style>{`
-        .settings-page { display: flex; flex-direction: column; gap: 2rem; }
+        .settings-page { display: flex; flex-direction: column; gap: 2rem; padding: 2rem; }
+        .settings-header { margin-bottom: 1rem; }
         .settings-tabs {
           display: flex;
-          gap: 0.5rem;
+          gap: 0.25rem;
           padding: 0.5rem;
-          border-radius: var(--radius-lg);
+          border-radius: 16px;
           width: fit-content;
+          background: var(--bg-surface);
         }
         .tab-btn {
-          padding: 0.6rem 1.25rem;
+          padding: 0.75rem 1.5rem;
           border-radius: 12px;
           border: none;
           background: transparent;
           color: var(--text-muted);
-          font-weight: 600;
+          font-weight: 700;
           font-size: 0.9rem;
           display: flex;
           align-items: center;
@@ -68,7 +70,7 @@ const SettingsPage = () => {
           cursor: pointer;
           transition: var(--transition);
         }
-        .tab-btn:hover { background: var(--bg-surface); color: var(--text-primary); }
+        .tab-btn:hover:not(.active) { background: var(--glass); color: var(--text-primary); }
         .tab-btn.active {
           background: var(--primary);
           color: white;
@@ -76,8 +78,10 @@ const SettingsPage = () => {
         }
         
         @media (max-width: 768px) {
-          .settings-tabs { width: 100%; justify-content: center; }
-          .tab-btn { flex: 1; padding: 0.6rem 0.5rem; justify-content: center; font-size: 0.8rem; gap: 0.4rem; }
+          .settings-page { padding: 1rem; gap: 1.5rem; }
+          .settings-tabs { width: 100%; overflow-x: auto; padding: 0.4rem; border-radius: 14px; }
+          .tab-btn { flex: 1; padding: 0.65rem 0.75rem; justify-content: center; font-size: 0.82rem; gap: 0.5rem; border-radius: 10px; }
+          .page-title { font-size: 1.75rem; }
         }
       `}</style>
     </div>

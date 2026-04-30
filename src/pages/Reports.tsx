@@ -96,7 +96,7 @@ const ReportsPage = () => {
         <>
           {/* KPIs */}
           <div className="stats-grid">
-            <StatCard icon={<Users />} label="Total Contactos" value={t.total_patients} />
+            <StatCard icon={<Users />} label="Total Contactos" value={t.total_contacts} />
             <StatCard icon={<TrendingUp />} label="Interesados" value={t.total_leads} color="#ff9f0a" />
             <StatCard icon={<Users />} label="Convertidos a Paciente" value={t.total_converted} color="#34c759" />
             <StatCard icon={<CalendarCheck />} label="Citas Agendadas" value={t.total_appointments} color="#5856d6" />
@@ -150,7 +150,7 @@ const ReportsPage = () => {
                   <tbody>
                     {data.recentApps.map((a: any, i: number) => (
                       <tr key={i}>
-                        <td>{a.patient_name}</td>
+                        <td>{a.contact_name}</td>
                         <td>{format(new Date(a.appointment_date), "d MMM, HH:mm", { locale: es })}</td>
                         <td>{a.description}</td>
                         <td><span className={`source-pill ${a.source}`}>{a.source === 'bot' ? '🤖 Bot' : '👤 Manual'}</span></td>
