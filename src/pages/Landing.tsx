@@ -114,19 +114,17 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
   }
 
   const currentLogo = isDarkMode 
-    ? (settings.brand?.logo_url || settings.brand?.logo_dark_url) 
-    : (settings.brand?.logo_dark_url || settings.brand?.logo_url);
+    ? (settings.brand?.logo_dark_url || settings.brand?.logo_url) 
+    : (settings.brand?.logo_url || settings.brand?.logo_dark_url);
 
   const logoStyle: any = { 
     height: '44px', 
     width: 'auto', 
     objectFit: 'contain',
-    // Filtro inteligente: 
-    // Si es DARK: Invertimos si NO hay logo oscuro (para que el negro sea blanco)
-    // Si es LIGHT: Invertimos si AMBOS son iguales o si sospechamos que es blanco sobre blanco
+    // Filtro inteligente mejorado
     filter: isDarkMode 
-      ? (!settings.brand?.logo_dark_url ? 'brightness(0) invert(1)' : 'none')
-      : (settings.brand?.logo_dark_url && settings.brand?.logo_url === settings.brand?.logo_dark_url ? 'brightness(0)' : 'none')
+      ? (!settings.brand?.logo_dark_url || settings.brand?.logo_dark_url === settings.brand?.logo_url ? 'brightness(0) invert(1)' : 'none')
+      : 'none'
   };
 
   const whatsappPhone = settings.contact?.phone?.replace(/\D/g, '') || '';
@@ -432,7 +430,7 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
             <span className="ios-label">Enlaces</span>
             <a href="#inicio">Inicio</a>
             <a href="#especialidades">Servicios</a>
-            <a href="#doctora">InformaciÃ³n</a>
+            <a href="#doctora">Información</a>
             <a href="#contacto">Contacto</a>
           </div>
           <div className="f-col">
@@ -462,8 +460,8 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
         .nav-flex { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         .nav-links-ios { display: flex; align-items: center; gap: 2rem; }
         .nav-links-ios a { text-decoration: none; color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; }
-        .nav-actions-mobile { display: none; align-items: center; gap: 0.75rem; }
-        .mobile-menu-btn { display: flex; background: var(--primary-light); color: var(--primary); border: none; padding: 0.6rem; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; }
+        .nav-actions-mobile { display: none; align-items: center; gap: 0.5rem; }
+        .mobile-menu-btn { display: flex; background: var(--glass-bg); color: var(--text-primary); border: 1px solid var(--glass-border); padding: 0.5rem; border-radius: 12px; cursor: pointer; align-items: center; justify-content: center; width: 44px; height: 44px; }
         .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(8px); z-index: 1999; }
         .mobile-drawer-ios { position: fixed; top: 0; right: 0; width: 85%; height: 100vh; z-index: 2000; padding: 2.5rem; display: flex; flex-direction: column; border-radius: 0; border-left: 1px solid var(--glass-border); background: var(--bg-app); }
         .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3.5rem; }
@@ -602,19 +600,6 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
         .location-grid { display: grid; grid-template-columns: 1fr 1.5fr; min-height: 500px; border-radius: 40px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.1); border: 1px solid var(--glass-border); }
         .loc-info { padding: 4rem; display: flex; flex-direction: column; justify-content: center; }
         .loc-map { background: #eee; }
-
-        @media (max-width: 768px) {
-          .nav-links-ios { display: none; }
-          .nav-actions-mobile { display: flex; }
-          .hero-ios { padding-top: 140px !important; text-align: center; grid-template-columns: 1fr; min-height: auto; }
-          .hero-text-wrap { display: flex; flex-direction: column; align-items: center; }
-          .display-text { font-size: 2.8rem; line-height: 1.1; }
-          .location-grid { grid-template-columns: 1fr; min-height: auto; }
-          .loc-info { padding: 2rem; }
-          .loc-map { height: 300px; }
-          .footer-main { grid-template-columns: 1fr; gap: 2.5rem; text-align: center; }
-          .f-col { align-items: center; }
-        }
 
         .footer-ios { padding: 6rem 0 3rem; border-top: 1px solid var(--glass-border); }
         .footer-main { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 4rem; }
