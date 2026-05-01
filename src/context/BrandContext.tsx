@@ -85,12 +85,12 @@ export const BrandProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const reload = async () => {
     try {
       const token = localStorage.getItem('crm_token') || '';
-      const res = await fetch('/api/brand', {
+      const res = await fetch('/api/public/settings', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) return;
       const data = await res.json();
-      const merged: BrandConfig = { ...defaultBrand, ...data };
+      const merged: BrandConfig = { ...defaultBrand, ...(data.brand || {}) };
       setBrandState(merged);
       applyBrandToDOM(merged);
     } catch {
