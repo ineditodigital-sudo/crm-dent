@@ -357,10 +357,10 @@ app.post('/api/appointments', requireAuth, async (req, res) => {
         try {
             const cal = await getCalendarClient();
             if (cal) {
-                const event = await cal.events.insert({ calendarId: 'primary', requestBody: { summary: `Cita: ${pName}`, description, start: { dateTime: start.toISOString() }, end: { dateTime: end.toISOString() } } });
+                const event = await cal.events.insert({ calendarId: 'primary', requestBody: { summary: `Cita: ${pName}`, description, start: { dateTime: start.toISOString(), timeZone: 'America/Mexico_City' }, end: { dateTime: end.toISOString(), timeZone: 'America/Mexico_City' } } });
                 gId = event.data.id; gUrl = event.data.htmlLink;
             }
-        } catch (e) {}
+        } catch (e) { console.error('Error Google Calendar (Manual):', e); }
         const [resCita] = await db.execute('INSERT INTO appointments (contact_id, contact_name, appointment_date, end_date, description, google_event_id, google_event_url, source) VALUES (?,?,?,?,?,?,?,?)', [contact_id, pName, appointment_date, end.toISOString().slice(0, 19).replace('T', ' '), description || null, gId || null, gUrl || null, 'manual']);
         
         if (socket && pPhone) {
@@ -498,12 +498,12 @@ async function connectToWhatsApp() {
                         try {
                             const cal = await getCalendarClient();
                             if (cal) {
-                                const gEvent = await cal.events.insert({ calendarId: 'primary', requestBody: { summary: `Cita: ${pName}`, start: { dateTime: fechaCita.toISOString() }, end: { dateTime: endDate.toISOString() } } });
+                                const gEvent = await cal.events.insert({ calendarId: 'primary', requestBody: { summary: `Cita: ${pName}`, start: { dateTime: fechaCita.toISOString(), timeZone: 'America/Mexico_City' }, end: { dateTime: endDate.toISOString(), timeZone: 'America/Mexico_City' } } });
                                 gUrl = gEvent.data.htmlLink;
                                 await db.execute('UPDATE appointments SET google_event_id = ?, google_event_url = ? WHERE id = ?', [gEvent.data.id, gUrl, resCita.insertId]);
                             }
                         } catch (e) { console.error('Error Google Calendar:', e); }
-                        botMsg = botMsg.replace(citaMatch[0], '').trim() + `\n\n📅 *¡Cita confirmada!* Aquí: ${gUrl || 'agendada en sistema'}`;
+                        botMsg = botMsg.replace(citaMatch[0], '').trim() + (gUrl ? `\n\n✅ *¡Cita confirmada!* Aqui: ${gUrl}` : `\n\n✅ *¡Cita confirmada en el CRM!* (No se pudo enlazar con Google Calendar)`);
                     }
 
                     if (botMsg.trim()) {
