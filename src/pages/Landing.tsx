@@ -114,6 +114,14 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
     }
   }
 
+  // Tema dinámico
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: any) => setIsDarkMode(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const currentLogo = isDarkMode 
     ? (settings.brand?.logo_dark_url || settings.brand?.logo_url) 
     : (settings.brand?.logo_url || settings.brand?.logo_dark_url);
@@ -122,11 +130,7 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
     height: '44px', 
     width: 'auto', 
     objectFit: 'contain',
-    filter: isDarkMode && !settings.brand?.logo_dark_url && settings.brand?.logo_url
-      ? 'brightness(0) invert(1)' 
-      : !isDarkMode && !settings.brand?.logo_dark_url && settings.brand?.logo_url
-      ? 'brightness(0)'
-      : 'none'
+    filter: isDarkMode ? 'brightness(0) invert(1)' : 'brightness(0)'
   };
 
   const whatsappPhone = settings.contact?.phone?.replace(/\D/g, '') || '';
