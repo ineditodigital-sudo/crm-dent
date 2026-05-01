@@ -598,6 +598,362 @@ app.get('/api/reports', requireAuth, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+app.get('/sitemap.xml', async (req, res) => {
+    try {
+        const [services] = await db.execute('SELECT name FROM services WHERE active = 1');
+        const domain = `https://${req.get('host')}`;
+        const lastMod = new Date().toISOString().split('T')[0];
+
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${domain}/</loc>
+    <lastmod>${lastMod}</lastmod>
+    <priority>1.0</priority>
+  </url>`;
+
+        // A├▒adir servicios si se desea (aunque sean secciones anchor, ayuda a la indexaci├│n de keywords)
+        services.forEach(s => {
+            xml += `
+  <url>
+    <loc>${domain}/#servicios</loc>
+    <lastmod>${lastMod}</lastmod>
+    <priority>0.8</priority>
+  </url>`;
+        });
+
+        xml += `\n</urlset>`;
+        res.header('Content-Type', 'application/xml');
+        res.send(xml);
+    } catch (e) {
+        res.status(500).send('Error generating sitemap');
+    }
+});
+
+app.get('/robots.txt', async (req, res) => {
+    try {
+        const [rows] = await db.execute('SELECT content FROM crm_settings WHERE section = "seo" AND key_name = "robots_txt"');
+        const customRobots = rows[0]?.content;
+        const domain = `https://${req.get('host')}`;
+
+        if (customRobots) {
+            res.header('Content-Type', 'text/plain');
+            return res.send(customRobots + `\n\nSitemap: ${domain}/sitemap.xml`);
+        }
+
+        const defaultRobots = `User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /auth_info_baileys/
+
+Sitemap: ${domain}/sitemap.xml`;
+        res.header('Content-Type', 'text/plain');
+        res.send(defaultRobots);
+    } catch (e) {
+        res.send('User-agent: *\nAllow: /');
+    }
+});
+
+// --- FAVICON DINAMICO ---
+app.get('/api/brand-favicon', async (req, res) => {
+    try {
+        const [rows] = await db.execute('SELECT value FROM brand_settings WHERE key_name = "logo_url"');
+        if (rows.length > 0 && rows[0].value) {
+            return res.redirect(rows[0].value);
+        }
+        // Fallback al logo por defecto si no hay uno subido
+        res.redirect('/logo.png');
+    } catch (e) {
+        res.redirect('/logo.png');
+    }
+});
+
+// --- SETTINGS (General con Auth para el Editor) ---
+app.get('/api/settings/keys-status', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await db.execute('SELECT key_name FROM crm_settings WHERE section = "api_keys" AND content IS NOT NULL AND content != ""');
+        res.json({ configured: rows.map(r => r.key_name) });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});//('├â┬ó├é┬Ø├àÔÇÖ Error al guardar settings:', err.message);
+
+
+// --- GOOGLE API HELPERS ---
+async function getAPIKeys() {
+    try {
+        const [rows] = await db.execute('SELECT key_name, content FROM crm_settings WHERE section = "api_keys"');
+        const k = rows.reduce((acc, r) => { acc[r.key_name] = r.content; return acc; }, {});
+        return {
+            gemini: (k.gemini_key || k.gemini || process.env.GEMINI_API_KEY || '').trim(),
+            google_id: (k.google_id || process.env.GOOGLE_CLIENT_ID || '').trim(),
+            google_secret: (k.google_secret || process.env.GOOGLE_CLIENT_SECRET || '').trim()
+        };
+    } catch (e) { return { gemini: (process.env.GEMINI_API_KEY || '').trim() }; }
+}
+
+async function getCalendarClient() {
+    if (!google) return null;
+    const keys = await getAPIKeys();
+    if (!keys.google_id || !keys.google_secret) return null;
+    const oauth2Client = new google.auth.OAuth2(keys.google_id, keys.google_secret, `https://${process.env.DOMAIN || 'localhost'}/api/calendar/callback`);
+    const [tokens] = await db.execute('SELECT * FROM google_tokens LIMIT 1');
+    if (tokens.length === 0) return null;
+    oauth2Client.setCredentials({ access_token: tokens[0].access_token, refresh_token: tokens[0].refresh_token, expiry_date: tokens[0].expiry_date });
+    return google.calendar({ version: 'v3', auth: oauth2Client });
+}
+
+app.get('/api/auth/google', requireAuth, async (req, res) => {
+    const keys = await getAPIKeys();
+    if (!keys.google_id || !keys.google_secret) return res.status(400).json({ error: 'Configura las API Keys primero' });
+    const oauth2Client = new google.auth.OAuth2(keys.google_id, keys.google_secret, `https://${req.get('host')}/api/calendar/callback`);
+    const url = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: ['https://www.googleapis.com/auth/calendar'], prompt: 'consent' });
+    res.json({ url });
+});
+
+app.get('/api/calendar/callback', async (req, res) => {
+    const { code } = req.query;
+    const keys = await getAPIKeys();
+    const oauth2Client = new google.auth.OAuth2(keys.google_id, keys.google_secret, `https://${req.get('host')}/api/calendar/callback`);
+    try {
+        const { tokens } = await oauth2Client.getToken(code);
+        await db.execute('DELETE FROM google_tokens');
+        await db.execute('INSERT INTO google_tokens (access_token, refresh_token, expiry_date) VALUES (?,?,?)', [tokens.access_token, tokens.refresh_token, tokens.expiry_date]);
+        res.send('<html><body style="font-family:sans-serif;text-align:center;padding:50px;"><h2>├â┬ó├àÔÇ£├óÔé¼┬ª Conectado con ├âãÆ├é┬®xito</h2><p>Ya puedes cerrar esta ventana.</p><script>window.close(); setTimeout(() => window.location.href="/connections", 2000);</script></body></html>');
+    } catch (err) { res.status(500).send('Error al conectar: ' + err.message); }
+});
+
+app.get('/api/calendar/status', requireAuth, async (req, res) => {
+    try {
+        const [tokens] = await db.execute('SELECT id FROM google_tokens LIMIT 1');
+        res.json({ connected: tokens.length > 0 });
+    } catch (err) { res.json({ connected: false }); }
+});
+
+app.post('/api/calendar/disconnect', requireAuth, async (req, res) => {
+    try {
+        await db.execute('DELETE FROM google_tokens');
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- CRM DATA ---
+app.get('/api/appointments/upcoming', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await db.execute(`
+            SELECT a.*, p.name as patient_name, p.phone as patient_phone
+            FROM appointments a
+            LEFT JOIN patients p ON a.patient_id = p.id
+            WHERE a.appointment_date >= NOW()
+              AND a.appointment_date <= DATE_ADD(NOW(), INTERVAL 7 DAY)
+              AND a.status != 'cancelada'
+            ORDER BY a.appointment_date ASC
+            LIMIT 20
+        `);
+        res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/notifications/stream', (req, res) => {
+    // EventSource no soporta headers, aceptamos token por query param
+    const token = req.query.token || req.headers['authorization']?.replace('Bearer ', '');
+    if (!token || token !== ADMIN_TOKEN) {
+        return res.status(401).end();
+    }
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+    const pingInterval = setInterval(() => {
+        try { res.write('event: ping\ndata: {}\n\n'); } catch (e) { clearInterval(pingInterval); }
+    }, 30000);
+    sseClients.add(res);
+    req.on('close', () => {
+        clearInterval(pingInterval);
+        sseClients.delete(res);
+    });
+});
+
+// --- BRAND GENERATE PROMPT ---
+app.post('/api/brand/generate-prompt', requireAuth, async (req, res) => {
+    const { clinic_name, giro, tagline } = req.body;
+    const keys = await getAPIKeys();
+    if (!keys.gemini || !GoogleGenerativeAI) return res.status(503).json({ error: 'IA no configurada' });
+    try {
+        const genAI = new GoogleGenerativeAI(keys.gemini, { apiVersion: 'v1' });
+        const [services] = await db.execute('SELECT name FROM services WHERE active = 1');
+        const serviceList = services.map((s) => s.name).join(', ') || 'varios servicios';
+
+        const negocio = clinic_name || 'Negocio';
+        const giroNegocio = giro || 'Servicios';
+        const eslogan = tagline || '';
+
+        const prompt = `Genera un prompt de sistema (system prompt) profesional para un chatbot de WhatsApp de un negocio con las siguientes caracteristicas:
+- Nombre: ${negocio}
+- Giro: ${giroNegocio}
+- Eslogan: ${eslogan}
+- Servicios: ${serviceList}
+
+El prompt debe:
+1. Definir la personalidad del bot (amable, profesional, empatico)
+2. Indicar el objetivo principal (agendar citas, responder dudas)
+3. Especificar que debe responder en espa├▒ol
+4. Incluir instrucciones para capturar el nombre del cliente
+5. Ser conciso (maximo 200 palabras)
+6. NO incluir etiquetas como __CITA__ o __DATOS__ (esas ya las maneja el sistema)
+
+Responde SOLO con el prompt, sin explicaciones adicionales.`;
+
+        const promptText = await callGemini(genAI, prompt);
+        res.json({ prompt: promptText.trim() });
+    } catch (err) {
+        console.error('Error en generate-prompt:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+// --- IA STATUS ---
+app.post('/api/brand/generate-landing', requireAuth, async (req, res) => {
+    const { clinic_name, giro, tagline } = req.body;
+    const keys = await getAPIKeys();
+    if (!keys.gemini || !GoogleGenerativeAI) {
+        console.error('ÔØî Error en generate-landing: Clave faltante o IA no cargada', { hasKey: !!keys.gemini, hasAI: !!GoogleGenerativeAI });
+        return res.status(503).json({ error: 'IA no configurada' });
+    }
+    try {
+        const genAI = new GoogleGenerativeAI(keys.gemini, { apiVersion: 'v1' });
+        const [services] = await db.execute('SELECT name, description FROM services WHERE active = 1 LIMIT 8');
+        const serviceList = services.map(s => `- ${s.name}${s.description ? ': ' + s.description : ''}`).join('\n') || '- Servicios profesionales';
+
+        const negocio = clinic_name || 'Negocio';
+        const giroNegocio = giro || 'Servicios';
+        const eslogan = tagline || '';
+
+        // Obtener datos adicionales de la marca para el prompt
+        const [brandRows] = await db.execute('SELECT key_name, content FROM crm_settings WHERE section = "brand"');
+        const rawDoctorName = brandRows.find(r => r.key_name === 'doctor_name')?.content;
+        const specialistContext = rawDoctorName ? `Dr/Dra ${rawDoctorName}` : 'nuestro especialista';
+
+        const prompt = `Eres un experto en marketing digital y copywriting para negocios de ${giroNegocio} en Mexico. 
+Genera contenido persuasivo, moderno y atractivo para la landing page de este negocio:
+- Nombre: ${negocio}
+- Giro: ${giroNegocio}
+- Eslogan actual: ${eslogan}
+- Servicios ofrecidos:
+${serviceList}
+
+Genera el contenido estructurado EXACTAMENTE asi (sin asteriscos, sin markdown, solo el texto):
+
+[HERO_TITULO]
+Un titular poderoso, emocional e impactante de maximo 10 palabras.
+
+[HERO_SUBTITULO]
+Una promesa de transformacion en 2-3 oraciones. Habla de beneficios.
+
+[SERVICIOS_TITULO]
+Un titulo atractivo para la seccion de servicios (5-7 palabras).
+
+[SERVICIOS_SUBTITULO]
+Una descripcion persuasiva de la propuesta de valor en 1-2 oraciones.
+
+[PROFESSIONAL_BIO]
+Un parrafo de 3-4 oraciones que presente a ${specialistContext} resaltando la empatia, tecnologia y resultados.
+
+[FAQ_Q1]
+Pregunta 1 comun del giro.
+[FAQ_A1]
+Respuesta 1 profesional y tranquilizadora.
+
+[FAQ_Q2]
+Pregunta 2.
+[FAQ_A2]
+Respuesta 2.
+
+[FAQ_Q3]
+Pregunta 3.
+[FAQ_A3]
+Respuesta 3.
+
+[FAQ_Q4]
+Pregunta 4.
+[FAQ_A4]
+Respuesta 4.
+
+Responde SOLO con las secciones indicadas, sin explicaciones adicionales.`;
+
+        const text = await callGemini(genAI, prompt);
+
+        // Parsear secciones
+        const extract = (tag) => {
+            const re = new RegExp(`\\[${tag}\\]\\s*([\\s\\S]*?)(?=\\[|$)`, 'i');
+            const m = text.match(re);
+            return m ? m[1].trim() : '';
+        };
+
+        const heroTitulo = extract('HERO_TITULO');
+        const heroSubtitulo = extract('HERO_SUBTITULO');
+        const servTitulo = extract('SERVICIOS_TITULO');
+        const servSubtitulo = extract('SERVICIOS_SUBTITULO');
+        const profBio = extract('PROFESSIONAL_BIO');
+
+        // Guardar automaticamente en crm_settings
+        const upsert = async (section, key_name, content) => {
+            if (!content) return;
+            await db.execute('DELETE FROM crm_settings WHERE section = ? AND key_name = ?', [section, key_name]);
+            await db.execute('INSERT INTO crm_settings (section, key_name, content) VALUES (?, ?, ?)', [section, key_name, content]);
+        };
+
+        if (heroTitulo) await upsert('hero', 'title', heroTitulo);
+        if (heroSubtitulo) await upsert('hero', 'subtitle', heroSubtitulo);
+        if (servTitulo) await upsert('services', 'title', servTitulo);
+        if (servSubtitulo) await upsert('services', 'subtitle', servSubtitulo);
+        if (profBio) await upsert('professional', 'bio', profBio);
+
+        // FAQs
+        for(let i=1; i<=4; i++) {
+            const q = extract(`FAQ_Q${i}`);
+            const a = extract(`FAQ_A${i}`);
+            if(q) await upsert('faq', `q${i}`, q);
+            if(a) await upsert('faq', `a${i}`, a);
+        }
+
+        res.json({
+            success: true,
+            applied: { heroTitulo, heroSubtitulo, servTitulo, servSubtitulo, profBio }
+        });
+    } catch (err) {
+        console.error('ÔØî Error en generate-landing:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+
+app.put('/api/services/:id', requireAuth, async (req, res) => {
+    const { name, description, price, duration_minutes, active, image_url } = req.body;
+    try {
+        const fields = [];
+        const params = [];
+        if (name !== undefined) { fields.push('name = ?'); params.push(name); }
+        if (description !== undefined) { fields.push('description = ?'); params.push(description); }
+        if (price !== undefined) { fields.push('price = ?'); params.push(price); }
+        if (duration_minutes !== undefined) { fields.push('duration_minutes = ?'); params.push(duration_minutes); }
+        if (active !== undefined) { fields.push('active = ?'); params.push(active); }
+        if (image_url !== undefined) { fields.push('image_url = ?'); params.push(image_url); }
+
+        if (fields.length === 0) return res.json({ success: true });
+
+        params.push(req.params.id);
+        await db.execute(`UPDATE services SET ${fields.join(', ')} WHERE id = ?`, params);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/services/:id', requireAuth, async (req, res) => {
+    try {
+        await db.execute('DELETE FROM services WHERE id = ?', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('*', (req, res) => {
     if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not found' });
     if (fs.existsSync(path.join(distDir, 'index.html'))) res.sendFile(path.join(distDir, 'index.html'));
