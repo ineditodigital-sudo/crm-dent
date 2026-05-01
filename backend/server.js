@@ -257,6 +257,64 @@ async function getCalendarClient() {
 }
 
 // --- CRM DATA ---
+app.get('/api/contacts', requireAuth, async (req, res) => {
+    try {
+        const [rows] = await db.execute(`
+            SELECT p.*, COUNT(m.id) as message_count 
+            FROM contacts p 
+            LEFT JOIN messages m ON m.contact_id = p.id 
+            GROUP BY p.id 
+            ORDER BY p.last_interaction DESC
+        `);
+        res.json(rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.patch('/api/contacts/:id', requireAuth, async (req, res) => {
+    try {
+        const fields = [];
+        const values = [];
+        for (const [k, v] of Object.entries(req.body)) {
+            if (['name', 'email', 'service_interested', 'status'].includes(k)) {
+                fields.push(`${k} = ?`);
+                values.push(v);
+            }
+        }
+        if (fields.length > 0) {
+            values.push(req.params.id);
+            await db.execute(`UPDATE contacts SET ${fields.join(', ')} WHERE id = ?`, values);
+        }
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.patch('/api/contacts/:id/status', requireAuth, async (req, res) => {
+    try {
+        await db.execute('UPDATE contacts SET status = ? WHERE id = ?', [req.body.status, req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.patch('/api/contacts/:id/manual', requireAuth, async (req, res) => {
+    try {
+        await db.execute('UPDATE contacts SET manual_mode = ? WHERE id = ?', [req.body.manual ? 1 : 0, req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/contacts/:id', requireAuth, async (req, res) => {
+    try {
+        await db.execute('DELETE FROM contacts WHERE id = ?', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/contacts/merge-duplicates', requireAuth, async (req, res) => {
+    try {
+        res.json({ success: true, message: 'Deduplicación simulada con éxito' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/conversations', requireAuth, async (req, res) => {
     try {
         const [rows] = await db.execute(`
