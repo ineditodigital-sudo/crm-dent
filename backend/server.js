@@ -370,7 +370,7 @@ app.post('/api/appointments', requireAuth, async (req, res) => {
                 const horaStr = fecha.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
                 const calStart = start.toISOString().replace(/[-:]|\.\d{3}/g, '');
                 const calEnd = end.toISOString().replace(/[-:]|\.\d{3}/g, '');
-                const addToCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cita%20Agendada&dates=${calStart}/${calEnd}&details=${encodeURIComponent(description || 'Consulta')}`;
+                const addToCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cita:%20${encodeURIComponent(description || 'Consulta')}&dates=${calStart}/${calEnd}&details=${encodeURIComponent(description || 'Consulta')}`;
 
                 const msg = `✅ *¡Nueva Cita Agendada!*\n\nHola ${pName}, te confirmamos que hemos agendado tu cita para el *${fechaStr} a las ${horaStr}*.\n\nServicio: ${description || 'Consulta'}\nGuárdala en tu calendario: ${addToCalUrl}\n\n¡Te esperamos!`;
                 const jid = pPhone.includes('@') ? pPhone : `${pPhone}@s.whatsapp.net`;
@@ -510,7 +510,7 @@ async function connectToWhatsApp() {
                         
                         const calStart = fechaCita.toISOString().replace(/[-:]|\.\d{3}/g, '');
                         const calEnd = endDate.toISOString().replace(/[-:]|\.\d{3}/g, '');
-                        const addToCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cita%20Agendada&dates=${calStart}/${calEnd}&details=Servicio:%20${encodeURIComponent(serviceName)}`;
+                        const addToCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cita:%20${encodeURIComponent(serviceName)}&dates=${calStart}/${calEnd}&details=Servicio:%20${encodeURIComponent(serviceName)}`;
                         
                         botMsg = botMsg.replace(citaMatch[0], '').trim() + `\n\n✅ *¡Cita confirmada!*\nGuárdala en tu calendario aquí: ${addToCalUrl}`;
                     }
