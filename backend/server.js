@@ -232,29 +232,7 @@ app.post('/api/settings/:section?', requireAuth, async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// --- GOOGLE API HELPERS ---
-async function getAPIKeys() {
-    try {
-        const [rows] = await db.execute('SELECT key_name, content FROM crm_settings WHERE section = "api_keys"');
-        const k = rows.reduce((acc, r) => { acc[r.key_name] = r.content; return acc; }, {});
-        return {
-            gemini: (k.gemini_key || k.gemini || process.env.GEMINI_API_KEY || '').trim(),
-            google_id: (k.google_id || process.env.GOOGLE_CLIENT_ID || '').trim(),
-            google_secret: (k.google_secret || process.env.GOOGLE_CLIENT_SECRET || '').trim()
-        };
-    } catch (e) { return { gemini: (process.env.GEMINI_API_KEY || '').trim() }; }
-}
 
-async function getCalendarClient() {
-    if (!google) return null;
-    const keys = await getAPIKeys();
-    if (!keys.google_id || !keys.google_secret) return null;
-    const oauth2Client = new google.auth.OAuth2(keys.google_id, keys.google_secret, `https://${process.env.DOMAIN || 'localhost'}/api/calendar/callback`);
-    const [tokens] = await db.execute('SELECT * FROM google_tokens LIMIT 1');
-    if (tokens.length === 0) return null;
-    oauth2Client.setCredentials({ access_token: tokens[0].access_token, refresh_token: tokens[0].refresh_token, expiry_date: tokens[0].expiry_date });
-    return google.calendar({ version: 'v3', auth: oauth2Client });
-}
 
 // --- CRM DATA ---
 app.get('/api/contacts', requireAuth, async (req, res) => {
@@ -520,11 +498,11 @@ async function connectToWhatsApp() {
                         try {
                             const cal = await getCalendarClient();
                             if (cal) {
-                                const gEvent = await cal.events.insert({ calendarId: 'primary', resource: { summary: `Cita: ${pName}`, start: { dateTime: fechaCita.toISOString() }, end: { dateTime: endDate.toISOString() } } });
+                                const gEvent = await cal.events.insert({ calendarId: 'primary', requestBody: { summary: `Cita: ${pName}`, start: { dateTime: fechaCita.toISOString() }, end: { dateTime: endDate.toISOString() } } });
                                 gUrl = gEvent.data.htmlLink;
                                 await db.execute('UPDATE appointments SET google_event_id = ?, google_event_url = ? WHERE id = ?', [gEvent.data.id, gUrl, resCita.insertId]);
                             }
-                        } catch (e) {}
+                        } catch (e) { console.error('Error Google Calendar:', e); }
                         botMsg = botMsg.replace(citaMatch[0], '').trim() + `\n\n📅 *¡Cita confirmada!* Aquí: ${gUrl || 'agendada en sistema'}`;
                     }
 
