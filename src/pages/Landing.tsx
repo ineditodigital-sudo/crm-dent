@@ -115,14 +115,14 @@ const Landing = ({ previewSettings }: { previewSettings?: any }) => {
   }
 
   const currentLogo = isDarkMode 
-    ? (settings.brand?.logo_url || settings.brand?.logo_dark_url) 
-    : (settings.brand?.logo_dark_url || settings.brand?.logo_url);
+    ? (settings.brand?.logo_dark_url || settings.brand?.logo_url) 
+    : (settings.brand?.logo_url || settings.brand?.logo_dark_url);
 
   const logoStyle: any = { 
     height: '44px', 
     width: 'auto', 
     objectFit: 'contain',
-    filter: (isDarkMode && !settings.brand?.logo_url && settings.brand?.logo_dark_url)
+    filter: (isDarkMode && !settings.brand?.logo_dark_url && settings.brand?.logo_url) || (!isDarkMode && !settings.brand?.logo_url && settings.brand?.logo_dark_url)
       ? 'brightness(0) invert(1)' 
       : 'none'
   };
