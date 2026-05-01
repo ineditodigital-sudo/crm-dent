@@ -183,7 +183,7 @@ const BusinessPage = () => {
   const save = async () => {
     setSaving(true);
     try {
-      const r = await fetch('/api/brand', {
+      const r = await fetch('/api/settings/brand', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${tok()}` },
         body: JSON.stringify(brand),
