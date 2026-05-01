@@ -346,13 +346,20 @@ app.get('/api/appointments', requireAuth, async (req, res) => {
 });
 
 app.post('/api/appointments', requireAuth, async (req, res) => {
-    const { contact_id, appointment_date, description } = req.body;
     try {
-        const [p] = await db.execute('SELECT name, phone FROM contacts WHERE id = ?', [contact_id]);
-        const pName = p[0]?.name || 'Contacto';
-        const pPhone = p[0]?.phone;
+        const { contact_id, contact_name, appointment_date, description } = req.body;
+        if (!appointment_date) return res.status(400).json({ error: 'Falta fecha' });
+        
+        let pName = contact_name || 'Paciente';
+        let pPhone = null;
+        if (contact_id) {
+            const [c] = await db.execute('SELECT name, phone FROM contacts WHERE id = ?', [contact_id]);
+            if (c.length > 0) { pName = c[0].name || pName; pPhone = c[0].phone; }
+        }
+
         const start = new Date(appointment_date);
         const end = new Date(start.getTime() + 60 * 60 * 1000);
+        const sqlDate = start.toISOString().slice(0, 19).replace('T', ' ');
         let gId = null, gUrl = null;
         try {
             const cal = await getCalendarClient();
@@ -361,7 +368,7 @@ app.post('/api/appointments', requireAuth, async (req, res) => {
                 gId = event.data.id; gUrl = event.data.htmlLink;
             }
         } catch (e) { console.error('Error Google Calendar (Manual):', e); }
-        const [resCita] = await db.execute('INSERT INTO appointments (contact_id, contact_name, appointment_date, end_date, description, google_event_id, google_event_url, source) VALUES (?,?,?,?,?,?,?,?)', [contact_id, pName, appointment_date, end.toISOString().slice(0, 19).replace('T', ' '), description || null, gId || null, gUrl || null, 'manual']);
+        const [resCita] = await db.execute('INSERT INTO appointments (contact_id, contact_name, appointment_date, end_date, description, google_event_id, google_event_url, source) VALUES (?,?,?,?,?,?,?,?)', [contact_id || null, pName, sqlDate, end.toISOString().slice(0, 19).replace('T', ' '), description || null, gId || null, gUrl || null, 'manual']);
         
         if (socket && pPhone) {
             try {
