@@ -477,7 +477,7 @@ async function connectToWhatsApp() {
                     const personality = brandCfg.bot_personality || `Eres el asistente de ${brandCfg.clinic_name || 'la clínica'}.`;
                     
                     const now = new Date();
-                    const prompt = `${personality}\nHoy es: ${now.toLocaleDateString('es-MX')}. \nREGLAS: \n1. Datos necesarios: Nombre, Email, Teléfono. \n2. Formato: __CITA|fecha=YYYY-MM-DD HH:mm:ss|servicio=X__\nSERVICIOS:\n${servicesList}\nHISTORIAL:\n${conversationHistory}\nCliente: ${text}\nAsistente:`;
+                    const prompt = `${personality}\nHoy es: ${now.toLocaleDateString('es-MX')}. \nREGLAS: \n1. Datos necesarios: Nombre, Email, Teléfono. \n2. Formato: __CITA|fecha=YYYY-MM-DD HH:mm:ss|servicio=X__\n3. MUY IMPORTANTE: NO incluyas URLs, links ni enlaces a calendarios en tu respuesta. El sistema los añadirá automáticamente.\nSERVICIOS:\n${servicesList}\nHISTORIAL:\n${conversationHistory}\nCliente: ${text}\nAsistente (SIN LINKS):`;
                     
                     const genAI = new GoogleGenerativeAI(keys.gemini, { apiVersion: 'v1beta' });
                     let botMsg = await callGemini(genAI, prompt);
@@ -787,6 +787,7 @@ El prompt debe:
 4. Incluir instrucciones para capturar el nombre del cliente
 5. Ser conciso (maximo 200 palabras)
 6. NO incluir etiquetas como __CITA__ o __DATOS__ (esas ya las maneja el sistema)
+7. NO incluir enlaces, URLs ni links de calendario. El sistema los añade automáticamente.
 
 Responde SOLO con el prompt, sin explicaciones adicionales.`;
 
