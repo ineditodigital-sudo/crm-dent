@@ -90,13 +90,13 @@ if (fs.existsSync(distDir)) app.use(express.static(distDir));
 async function callGemini(genAI, prompt, retries = 2) {
     const apiKey = genAI.apiKey || process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('No se encontró API Key para Gemini');
-    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-flash-latest'];
     let lastError = null;
 
     for (const modelName of modelsToTry) {
         try {
-            console.log(`🤖 Intentando (Direct v1) con modelo: ${modelName}...`);
-            const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
+            console.log(`🤖 Intentando (Direct v1beta) con modelo: ${modelName}...`);
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(url, {
@@ -497,7 +497,7 @@ async function connectToWhatsApp() {
                     const now = new Date();
                     const prompt = `${personality}\nHoy es: ${now.toLocaleDateString('es-MX')}. \nREGLAS: \n1. Datos necesarios: Nombre, Email, Teléfono. \n2. Formato: __CITA|fecha=YYYY-MM-DD HH:mm:ss|servicio=X__\nSERVICIOS:\n${servicesList}\nHISTORIAL:\n${conversationHistory}\nCliente: ${text}\nAsistente:`;
                     
-                    const genAI = new GoogleGenerativeAI(keys.gemini, { apiVersion: 'v1' });
+                    const genAI = new GoogleGenerativeAI(keys.gemini, { apiVersion: 'v1beta' });
                     let botMsg = await callGemini(genAI, prompt);
 
                     const datosMatch = botMsg.match(/__DATOS\|nombre=(.*?)\|email=(.*?)\|telefono=(.*?)__/i);
@@ -779,7 +779,7 @@ app.post('/api/brand/generate-prompt', requireAuth, async (req, res) => {
     const keys = await getAPIKeys();
     if (!keys.gemini || !GoogleGenerativeAI) return res.status(503).json({ error: 'IA no configurada' });
     try {
-        const genAI = new GoogleGenerativeAI(keys.gemini, { apiVersion: 'v1' });
+        const genAI = new GoogleGenerativeAI(keys.gemini, { apiVersion: 'v1beta' });
         const [services] = await db.execute('SELECT name FROM services WHERE active = 1');
         const serviceList = services.map((s) => s.name).join(', ') || 'varios servicios';
 
@@ -819,7 +819,7 @@ app.post('/api/brand/generate-landing', requireAuth, async (req, res) => {
         return res.status(503).json({ error: 'IA no configurada' });
     }
     try {
-        const genAI = new GoogleGenerativeAI(keys.gemini, { apiVersion: 'v1' });
+        const genAI = new GoogleGenerativeAI(keys.gemini, { apiVersion: 'v1beta' });
         const [services] = await db.execute('SELECT name, description FROM services WHERE active = 1 LIMIT 8');
         const serviceList = services.map(s => `- ${s.name}${s.description ? ': ' + s.description : ''}`).join('\n') || '- Servicios profesionales';
 
