@@ -368,7 +368,11 @@ app.post('/api/appointments', requireAuth, async (req, res) => {
                 const fecha = new Date(appointment_date);
                 const fechaStr = fecha.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
                 const horaStr = fecha.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
-                const msg = `✅ *¡Nueva Cita Agendada!*\n\nHola ${pName}, te confirmamos que hemos agendado tu cita para el *${fechaStr} a las ${horaStr}*.\n\nServicio: ${description || 'Consulta'}\n${gUrl ? `Calendario: ${gUrl}` : ''}\n\n¡Te esperamos!`;
+                const calStart = start.toISOString().replace(/[-:]|\.\d{3}/g, '');
+                const calEnd = end.toISOString().replace(/[-:]|\.\d{3}/g, '');
+                const addToCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cita%20Agendada&dates=${calStart}/${calEnd}&details=${encodeURIComponent(description || 'Consulta')}`;
+
+                const msg = `✅ *¡Nueva Cita Agendada!*\n\nHola ${pName}, te confirmamos que hemos agendado tu cita para el *${fechaStr} a las ${horaStr}*.\n\nServicio: ${description || 'Consulta'}\nGuárdala en tu calendario: ${addToCalUrl}\n\n¡Te esperamos!`;
                 const jid = pPhone.includes('@') ? pPhone : `${pPhone}@s.whatsapp.net`;
                 await socket.sendMessage(jid, { text: msg });
                 await db.execute('INSERT INTO messages (contact_id, content, sender) VALUES (?, ?, ?)', [contact_id, msg, 'admin']);
@@ -503,7 +507,12 @@ async function connectToWhatsApp() {
                                 await db.execute('UPDATE appointments SET google_event_id = ?, google_event_url = ? WHERE id = ?', [gEvent.data.id, gUrl, resCita.insertId]);
                             }
                         } catch (e) { console.error('Error Google Calendar:', e); }
-                        botMsg = botMsg.replace(citaMatch[0], '').trim() + (gUrl ? `\n\n✅ *¡Cita confirmada!* Aqui: ${gUrl}` : `\n\n✅ *¡Cita confirmada en el CRM!* (No se pudo enlazar con Google Calendar)`);
+                        
+                        const calStart = fechaCita.toISOString().replace(/[-:]|\.\d{3}/g, '');
+                        const calEnd = endDate.toISOString().replace(/[-:]|\.\d{3}/g, '');
+                        const addToCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cita%20Agendada&dates=${calStart}/${calEnd}&details=Servicio:%20${encodeURIComponent(serviceName)}`;
+                        
+                        botMsg = botMsg.replace(citaMatch[0], '').trim() + `\n\n✅ *¡Cita confirmada!*\nGuárdala en tu calendario aquí: ${addToCalUrl}`;
                     }
 
                     if (botMsg.trim()) {
