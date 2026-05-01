@@ -90,13 +90,13 @@ if (fs.existsSync(distDir)) app.use(express.static(distDir));
 async function callGemini(genAI, prompt, retries = 2) {
     const apiKey = genAI.apiKey || process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('No se encontró API Key para Gemini');
-    const modelsToTry = ['gemini-3.0-flash', 'gemini-3.1-pro', 'gemini-3.0-pro', 'gemini-pro'];
+    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
     let lastError = null;
 
     for (const modelName of modelsToTry) {
         try {
-            console.log(`🤖 Intentando (Direct v1beta) con modelo: ${modelName}...`);
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+            console.log(`🤖 Intentando (Direct v1) con modelo: ${modelName}...`);
+            const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(url, {
