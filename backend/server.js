@@ -90,7 +90,7 @@ if (fs.existsSync(distDir)) app.use(express.static(distDir));
 async function callGemini(genAI, prompt, retries = 2) {
     const apiKey = genAI.apiKey || process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error('No se encontró API Key para Gemini');
-    const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+    const modelsToTry = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
     let lastError = null;
 
     for (const modelName of modelsToTry) {
