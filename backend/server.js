@@ -139,6 +139,8 @@ const db = mysql.createPool({
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
+    maxIdle: 2,           // Limita el número de conexiones inactivas en el pool para evitar fugas/acumulación
+    idleTimeout: 30000,   // Cierra conexiones inactivas después de 30 segundos
     charset: 'utf8mb4'
 });
 
@@ -154,7 +156,7 @@ async function initDB() {
             await db.execute(`DELETE t1 FROM crm_settings t1 INNER JOIN crm_settings t2 WHERE t1.id < t2.id AND t1.section = t2.section AND t1.key_name = t2.key_name`);
             await db.execute('ALTER TABLE crm_settings ADD UNIQUE KEY section_key (section, key_name)');
             console.log('✅ Clave única añadida a crm_settings');
-        } catch (e) {}
+        } catch (e) { }
 
         await db.execute(`CREATE TABLE IF NOT EXISTS google_tokens (id INT AUTO_INCREMENT PRIMARY KEY, access_token TEXT, refresh_token TEXT, expiry_date BIGINT)`);
         await db.execute(`CREATE TABLE IF NOT EXISTS brand_settings (key_name VARCHAR(100) PRIMARY KEY, value TEXT) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
@@ -172,7 +174,7 @@ async function initDB() {
             `ALTER TABLE contacts ADD COLUMN IF NOT EXISTS manual_mode TINYINT(1) DEFAULT 0`,
             `ALTER TABLE services ADD COLUMN IF NOT EXISTS image_url TEXT`,
         ];
-        for (const m of migrations) { try { await db.execute(m); } catch (e) {} }
+        for (const m of migrations) { try { await db.execute(m); } catch (e) { } }
         console.log('✅ Base de datos lista y migrada.');
     } catch (err) { console.error('❌ Error Init DB:', err); }
 }
@@ -349,7 +351,7 @@ app.post('/api/appointments', requireAuth, async (req, res) => {
     try {
         const { contact_id, contact_name, appointment_date, description } = req.body;
         if (!appointment_date) return res.status(400).json({ error: 'Falta fecha' });
-        
+
         let pName = contact_name || 'Paciente';
         let pPhone = null;
         if (contact_id) {
@@ -369,7 +371,7 @@ app.post('/api/appointments', requireAuth, async (req, res) => {
             }
         } catch (e) { console.error('Error Google Calendar (Manual):', e); }
         const [resCita] = await db.execute('INSERT INTO appointments (contact_id, contact_name, appointment_date, end_date, description, google_event_id, google_event_url, source) VALUES (?,?,?,?,?,?,?,?)', [contact_id || null, pName, sqlDate, end.toISOString().slice(0, 19).replace('T', ' '), description || null, gId || null, gUrl || null, 'manual']);
-        
+
         if (socket && pPhone) {
             try {
                 const fecha = new Date(appointment_date);
@@ -383,7 +385,7 @@ app.post('/api/appointments', requireAuth, async (req, res) => {
                 const jid = pPhone.includes('@') ? pPhone : `${pPhone}@s.whatsapp.net`;
                 await socket.sendMessage(jid, { text: msg });
                 await db.execute('INSERT INTO messages (contact_id, content, sender) VALUES (?, ?, ?)', [contact_id, msg, 'admin']);
-            } catch (e) {}
+            } catch (e) { }
         }
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -398,7 +400,7 @@ app.patch('/api/appointments/:id/cancel', requireAuth, async (req, res) => {
             try {
                 const cal = await getCalendarClient();
                 if (cal) await cal.events.delete({ calendarId: 'primary', eventId: rows[0].google_event_id });
-            } catch (e) {}
+            } catch (e) { }
         }
         broadcastSSE('appointment_cancelled', { id: req.params.id });
         res.json({ success: true });
@@ -482,10 +484,10 @@ async function connectToWhatsApp() {
                     const [brandRows] = await db.execute('SELECT key_name, value FROM brand_settings');
                     const brandCfg = brandRows.reduce((acc, r) => { acc[r.key_name] = r.value; return acc; }, {});
                     const personality = brandCfg.bot_personality || `Eres el asistente de ${brandCfg.clinic_name || 'la clínica'}.`;
-                    
+
                     const now = new Date();
                     const prompt = `${personality}\nHoy es: ${now.toLocaleDateString('es-MX')}. \nREGLAS: \n1. Datos necesarios: Nombre, Email, Teléfono. \n2. Formato: __CITA|fecha=YYYY-MM-DD HH:mm:ss|servicio=X__\n3. MUY IMPORTANTE: NO incluyas URLs, links ni enlaces a calendarios en tu respuesta. El sistema los añadirá automáticamente.\nSERVICIOS:\n${servicesList}\nHISTORIAL:\n${conversationHistory}\nCliente: ${text}\nAsistente (SIN LINKS):`;
-                    
+
                     const genAI = new GoogleGenerativeAI(keys.gemini, { apiVersion: 'v1beta' });
                     let botMsg = await callGemini(genAI, prompt);
 
@@ -514,11 +516,11 @@ async function connectToWhatsApp() {
                                 await db.execute('UPDATE appointments SET google_event_id = ?, google_event_url = ? WHERE id = ?', [gEvent.data.id, gUrl, resCita.insertId]);
                             }
                         } catch (e) { console.error('Error Google Calendar:', e); }
-                        
+
                         const calStart = fechaCita.toISOString().replace(/[-:]|\.\d{3}/g, '');
                         const calEnd = endDate.toISOString().replace(/[-:]|\.\d{3}/g, '');
                         const addToCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Cita:%20${encodeURIComponent(serviceName)}&dates=${calStart}/${calEnd}&details=Servicio:%20${encodeURIComponent(serviceName)}`;
-                        
+
                         botMsg = botMsg.replace(citaMatch[0], '').trim() + `\n\n✅ *¡Cita confirmada!*\nGuárdala en tu calendario aquí: ${addToCalUrl}`;
                     }
 
@@ -543,7 +545,7 @@ async function checkAppointmentReminders() {
                 await db.execute('UPDATE appointments SET reminder_sent = 1 WHERE id = ?', [a.id]);
             }
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
 app.get('/api/whatsapp/status', requireAuth, (req, res) => res.json({ connected: connectionState === 'open', qr: lastQR, error: lastError }));
@@ -903,11 +905,11 @@ Responde SOLO con las secciones indicadas, sin explicaciones adicionales.`;
         if (profBio) await upsert('professional', 'bio', profBio);
 
         // FAQs
-        for(let i=1; i<=4; i++) {
+        for (let i = 1; i <= 4; i++) {
             const q = extract(`FAQ_Q${i}`);
             const a = extract(`FAQ_A${i}`);
-            if(q) await upsert('faq', `q${i}`, q);
-            if(a) await upsert('faq', `a${i}`, a);
+            if (q) await upsert('faq', `q${i}`, q);
+            if (a) await upsert('faq', `a${i}`, a);
         }
 
         res.json({
@@ -956,9 +958,41 @@ app.get('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', async () => {
+const server = app.listen(PORT, '0.0.0.0', async () => {
     console.log(`🚀 Servidor en puerto ${PORT}`);
     await initDB();
     inicializarLibreriasYWhatsApp();
     setInterval(checkAppointmentReminders, 3600000);
 });
+
+// Manejo de Cierre Ordenado (Graceful Shutdown)
+async function gracefulShutdown(signal) {
+    console.log(`\n🔄 Recibida señal ${signal}. Cerrando servidor de manera ordenada...`);
+    
+    server.close(() => {
+        console.log('✅ Servidor HTTP cerrado.');
+    });
+
+    if (socket) {
+        try {
+            socket.end();
+            console.log('✅ Conexión de WhatsApp cerrada.');
+        } catch (e) {
+            console.error('Error al cerrar WhatsApp:', e.message);
+        }
+    }
+
+    if (db) {
+        try {
+            await db.end();
+            console.log('✅ Pool de base de datos cerrado limpiamente.');
+        } catch (e) {
+            console.error('❌ Error al cerrar el pool de base de datos:', e.message);
+        }
+    }
+
+    process.exit(0);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

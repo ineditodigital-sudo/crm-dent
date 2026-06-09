@@ -24,9 +24,15 @@ async function testKeys() {
         console.log('Length:', gemini.length);
         console.log('Starts with:', gemini.substring(0, 5) + '...');
         
+        await db.end();
         process.exit(0);
     } catch (e) {
         console.error('Error:', e.message);
+        try {
+            await db.end();
+        } catch (dbErr) {
+            console.error('Error closing DB:', dbErr.message);
+        }
         process.exit(1);
     }
 }
